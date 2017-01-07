@@ -1,0 +1,58 @@
+<html>
+<head>
+<script type="application/javascript">
+function draw() {
+  var canvas = document.getElementById("canvas");
+  var ctx = canvas.getContext("2d");
+
+ctx.beginPath();
+
+ctx.strokeStyle = "rgb(38,12,169)"
+ctx.lineWidth = 10;
+
+// ctx.quadraticCurveTo(30,0,0,15);
+ctx.arc( 150, 150, 150 - 5 , Math.PI * 180 / 180, Math.PI * 270 / 180, false );
+// ctx.stroke();
+
+// ctx.beginPath();
+ctx.moveTo( 150 - 50, 150 );
+ctx.arc( 150, 150, 50, Math.PI * 180 / 180, Math.PI * 270 / 180, false );
+
+ctx.stroke();
+
+ctx.beginPath();
+
+var grd = ctx.createLinearGradient(0, 0, 150 * 2 , 150);
+// grd.addColorStop(0, "#fcff03"); // light 
+grd.addColorStop(0, "yellow"); // light 
+grd.addColorStop(1, "#d8db03"); // dark 
+ctx.fillStyle = grd;
+
+// ctx.fillStyle = "yellow";
+ctx.arc( 75+ 5 + 1, 75 + 5 + 1, 34, Math.PI * ( 0 + 30 ) / 180, Math.PI * ( 0 + 30 ) / -180, false );
+ctx.lineTo( 75+ 5 + 1, 75 + 5 + 1 );
+// ctx.arc( 75+ 5 + 1 ,75+ 5 + 1,40,Math.PI/7,-Math.PI/7,false);
+
+
+// ctx.arc( 75+ 5 + 1 ,75+ 5 + 1,40,Math.PI * ( 0 + 30 ) / 180, -1 * Math.PI * ( 0 + 30 ) / 180,false);
+// ctx.lineTo(75+ 5 + 1,75+ 5 + 1);
+
+ctx.shadowColor = "#ced000";
+ctx.shadowBlur = 20;
+ctx.shadowOffsetX = 0;
+ctx.shadowOffsetY = 0;
+
+
+ctx.fill();
+
+//  ctx.fillStyle = "rgb(200,0,0)";
+//  ctx.fillRect (10, 10, 55, 50);
+//  ctx.fillStyle = "rgba(0, 0, 200, 0.5)";
+//  ctx.fillRect (30, 30, 55, 50);
+}
+</script>
+</head>
+<body onload="draw()">
+  <canvas id="canvas" width="300" height="300"></canvas>
+</body>
+</html>

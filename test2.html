@@ -1,0 +1,222 @@
+<html>
+<head>
+<script type="application/javascript">
+function draw() {
+  var oData = [] ;
+  // test data
+  oData.push( { dValue: 70.0, cDesc: "Test1" } );
+  oData.push( { dValue: 80.0, cDesc: "Test2" } );
+  oData.push( { dValue: 50.0, cDesc: "Dit is een erg lange omschrijving" } );
+
+  // de canvan
+  var canvas = document.getElementById("canvas");
+  var ctx    = canvas.getContext("2d");
+
+
+  // grote scherm
+  var iScrXLen = canvas.width ; // 800      ; // x-lengte grafic
+  var iScrYLen = canvas.height; // 800      ; // y-lengte grafic
+  
+  // schaal indeling
+  var iLineAsWidth = 4      ; // breedte line
+  var oLineAsColor = "black"; // kleur line
+  
+  var iLineStafWidth  = 2 ;
+  var oLineStafColor  = "blue";
+  var oLineStafColBrd = "black";
+  
+  oLineStafColor = ctx.createLinearGradient(0, 0, 0, iScrYLen);
+  oLineStafColor.addColorStop( 0, "blue" );
+  oLineStafColor.addColorStop( 1, "navy" );
+  
+  var iMarkAsYLineXlen =  8 ; //lengte in pixels breedte markers y-as
+  var iMarkAsYLineWith =  4 ; 
+  var iMarkAsYLineColor= "black"; 
+  var iMarkAsYSteps    = 10 ; // aantal stappen y-as voor markers
+  
+  // de min max values grafiek
+  var iGrafValMin  = 0     ; 
+  var iGrafValMax  = 100.0 ;
+  
+  // de x,y min/max voor grafix
+  var iGrafXMin = 0 ;    
+  var iGrafYMin = 4 ;   // ivm blur effect grafiek
+  var iGrafXMax = iScrXLen ;
+  var iGrafYMax = iScrYLen ; 
+  
+  var iGrafStafExtra = 10 ; // aantal punten links en rechtsn van de staaf grafiek
+
+  
+  // bepaal hoeveel elementen te tekenen
+  var iElemNum = oData.length ;
+
+  // bepaal min max waarden
+  iGrafValMin = 0.0 ; 
+  iGrafValMax = 0.0 ;
+  for( var iCount = 0; iCount < iElemNum; iCount++ ) {
+     if ( oData[ iCount ].dValue < iGrafValMin ) {
+        iGrafValMin = oData[ iCount ].dValue ;
+     }
+     if ( oData[ iCount ].dValue > iGrafValMax ) {
+        iGrafValMax = oData[ iCount ].dValue ;
+     }
+  }
+  // afgeronde max waarde uitrekenen
+  var iGrafValMaxRnd = 0 ;
+  {
+     var dLog   = Math.log( iGrafValMax ) /  Math.LN10 ; // log10
+     var dTrunc = Math.floor( dLog ) ;
+     var dMax   = Math.floor( Math.exp( dTrunc * Math.LN10 )); 
+     var dNew = iGrafValMax * 10 / dMax ;
+     
+     if ( dNew != Math.floor( dNew ) ) {
+        dNew = Math.floor( dNew + 1 );
+     } else {
+        dNew  = Math.floor( dNew ) ;
+     }
+     dNew = dNew * dMax / 10 ;
+     
+     iGrafValMaxRnd = dNew ; // afgeronde max waarde voor schaal verdeling
+  }
+  
+  
+  // bepaal breede 1 element in pixels = float in javascript canvas.... op pixels afronden naar beneden
+  var iGrafXLenOne = Math.floor( ( iGrafXMax - iGrafXMin ) / iElemNum );
+
+
+  // dit onderstaande moet van buiten naar binnen gaan tov iGraf* vars
+
+
+  // tekst onder de grafiek
+  // ................
+  iGrafYMax = iGrafYMax - 40 ; // positie reserver voor teksten onder de balk
+  iTextYMin = iGrafYMax +  1 ;
+
+
+  // breedte tekst ????
+  
+
+  // de y-as streepjes, aantal streepjes = stappen + 1 
+  for( var iCount = 0; iCount <= iMarkAsYSteps; iCount++ ) {
+     var iCorrect = 0 ;
+     if ( iCount == 0 ) {
+       iCorrect = iMarkAsYLineWith / 2 ;
+     }
+     if ( iCount == iMarkAsYSteps ) {
+       iCorrect = -1 * iMarkAsYLineWith / 2  ;
+     }
+     
+     ctx.beginPath();
+     ctx.moveTo( iGrafXMin                   , iCorrect + iGrafYMin + iCount * ( iGrafYMax - iGrafYMin  ) / iMarkAsYSteps );
+     ctx.lineTo( iGrafXMin + iMarkAsYLineXlen, iCorrect + iGrafYMin + iCount * ( iGrafYMax - iGrafYMin  ) / iMarkAsYSteps );
+     ctx.strokeStyle = iMarkAsYLineColor ;
+     ctx.lineWidth   = iMarkAsYLineWith  ; 
+     
+     ctx.stroke();
+  
+//  var iGrafXMin = 0 ;    
+//  var iGrafYMin = 4 ;   // ivm blur effect grafiek
+//  var iGrafXMax = iScrXLen ;
+//  var iGrafYMax = iScrYLen ; 
+  
+  
+//  var iMarkAsYLineXlen =  6 ; //lengte in pixels breedte markers y-as
+//  var iMarkAsYLineWith =  4 ; 
+//  var iMarkAsYLineColor= "black; 
+//  var iMarkAsYSteps    = 10 ; // aantal stappen y-as voor markers
+    
+  }
+  iGrafXMin += iMarkAsYLineXlen ;
+  
+  
+
+
+  // de x-y assen 
+  // ........
+
+  // teken de y-as
+  ctx.beginPath();
+  ctx.moveTo( iGrafXMin + iLineAsWidth / 2 , iGrafYMin ) ;  // links boven = 0,0, rekening houden met line width
+  ctx.lineTo( iGrafXMin + iLineAsWidth / 2 , iGrafYMax );
+  ctx.strokeStyle = oLineAsColor ;
+  ctx.lineWidth   = iLineAsWidth; 
+  ctx.stroke();
+  
+  // teken de x-as
+  ctx.beginPath();
+  ctx.moveTo( iGrafXMin + iLineAsWidth / 2, iGrafYMax - iLineAsWidth / 2 );
+  ctx.lineTo( iGrafXMax                   , iGrafYMax - iLineAsWidth / 2 );
+  ctx.strokeStyle = oLineAsColor ;
+  ctx.lineWidth   = iLineAsWidth; 
+  ctx.stroke();
+  
+  // bepaal x,y min/max aanpassen  
+  iGrafXMin = iGrafXMin + iLineAsWidth - 1 ;
+  // iGrafYMin = 0 ;
+  // iGrafXMax = iScrXLen
+  iGrafYMax = iGrafYMax - iLineAsWidth - 1 ;
+  
+  
+  // teken staaf grafiek
+  // ...................
+
+  for( var iCount = 0; iCount < iElemNum; iCount++ ) {
+     // coordinaten rectanble = diagram
+     var iXfrom = 0 ;
+     var iXto   = 0 ;
+     var iYfrom = 0 ;
+     var iYto   = 0 ;
+     
+     
+     iXfrom = iGrafXMin + iCount * iGrafXLenOne + iGrafStafExtra + iLineStafWidth  ;
+     iXto   = iXfrom + iGrafXLenOne - iGrafStafExtra * 2 - + iLineStafWidth * 2 ; 
+     
+     // momenteel uitgaande dat 0 altijd de ondergrens is, rekent makkelijker ;
+     iYfrom  = iGrafYMax - Math.floor( oData[ iCount ].dValue / iGrafValMax * ( iGrafYMax - iGrafYMin )) ;
+     iYto    = iGrafYMax ;
+     
+     ctx.beginPath();
+     ctx.moveTo( iXfrom, iYfrom );
+     ctx.rect( iXfrom, iYfrom, iXto - iXfrom + 1, iYto - iYfrom + 1 );
+     
+     ctx.shadowColor   = "black";
+     ctx.shadowBlur    = iGrafStafExtra / 2;
+     ctx.shadowOffsetX = 0;
+     ctx.shadowOffsetY = 0;
+     
+     ctx.fillStyle   = oLineStafColor;
+     ctx.fill();
+     ctx.strokeStyle = oLineStafColBrd ;
+     ctx.lineWidth   = iLineStafWidth; 
+//     ctx.stroke();
+     
+     // tekst onder balk zetten
+     ctx.shadowColor   = "blue";
+     ctx.shadowBlur    = 0;
+     ctx.shadowOffsetX = 0;
+     ctx.shadowOffsetY = 0;
+     ctx.fillStyle   = "black";
+
+     ctx.font = "30pt Calibri";
+     ctx.textBaseline = "top" ;
+     
+     // alert( "ctx.measureText(oData[ iCount ].cDesc ): " + ctx.measureText(oData[ iCount ].cDesc ) ) ;
+     
+     // ctx.fillText( oData[ iCount ].cDesc, iXfrom + ( iXto - iXfrom - ctx.measureText(oData[ iCount ].cDesc ) / 2 ) , iTextYMin );
+     ctx.textAlign = "center"; 
+     ctx.fillText( oData[ iCount ].cDesc, iXfrom + ( iXto - iXfrom ) / 2, iTextYMin, iXto - iXfrom );
+     
+  }
+  
+  // alert( "aantal: " + iElemNum );
+  // loop door alle data heen
+  
+  
+
+}
+</script>
+</head>
+<body onload="draw()">
+  <canvas id="canvas" width="900" height="800"></canvas>
+</body>
+</html>

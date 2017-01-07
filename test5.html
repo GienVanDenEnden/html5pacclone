@@ -1,0 +1,309 @@
+<html>
+<head>
+<script type="application/javascript">
+function askScreen () {
+  this.idScreen      = 'divAskScreen'        ;
+  this.idBody        = 'divAskScreen_body'   ;
+  this.idHeader      = 'divAskScreen_header' ;
+  this.idFooter      = 'divAskScreen_footer' ;
+  this.oFieldScreen  = null ;
+  this.oFieldBody    = null ;
+  this.oFieldFooter  = null ;
+  this.oFieldHeader  = null ;
+
+  // you must html-encode the text yourself...
+  this.txtTitle      = 'Title dialog' ;  
+  this.txtQuestion   = 'Jippie, dit is een...test!'; 
+  this.arrButtons    = [ { text:'Ok'     , value: 'ok'     }
+                       , { text:'Cancel' , value: 'cancel' }
+                       , { text:'Extra'  , value: 'extra'  } 
+                       ] ;
+
+  this.callAction    = null ; // call back function
+
+  this.obj_timer      = null     ;
+  this.timerInterval  =   10     ;
+  this.opacityInterval=    0.025 ;
+  // aantal intervals =   40      (1/0.025)
+  this.rotateInterval =    2.25  ;
+  this.rotate         =   90     ;
+  this.transX         = -200     ; // moet op -50 uitzoeken in 40 stappen
+  this.transXInterval =    3.75  ;
+  
+
+
+  // start go screen, callIfCompleted will be called by the end
+  this.start = function( CallAction ) {
+     this.callAction    = CallAction       ;
+
+     this.oFieldScreen  = document.getElementById( this.idScreen );
+     this.oFieldBody    = document.getElementById( this.idBody   );
+     this.oFieldFooter  = document.getElementById( this.idFooter );
+     this.oFieldHeader  = document.getElementById( this.idHeader );
+
+     this.timerEnd() ;
+
+     this.oFieldScreen.style.display = "block"          ; 
+     this.oFieldBody.innerHTML       = this.txtQuestion ;
+     this.oFieldHeader.innerHTML     = this.txtTitle    ;
+
+     // buttons
+     var cbuttons = '' ;
+     var iCnt ;
+     for( iCnt = 0 ; iCnt < this.arrButtons.length; iCnt++ ) {
+        cbuttons += '<button id="' + this.idScreen + '_'+ iCnt + '">';
+        cbuttons += this.arrButtons[ iCnt ].text ;
+        cbuttons += '</button>';
+     }
+
+     this.oFieldFooter.innerHTML = cbuttons ;
+
+     // zet action
+     for( iCnt = 0 ; iCnt < this.arrButtons.length; iCnt++ ) {
+       this.setButtonAction( iCnt ) ;  
+     }
+
+     var me          = this ;
+
+     this.rotate     = 90 ;
+//     this.oFieldScreen.style.transform = "translate(-50%, -50%) rotate(" + this.rotate + "deg)" ;
+     
+     this.oFieldScreen.style.transform = "translate(" + this.transX + "%, -50%) rotate3d( 1,0,0," + this.rotate + "deg)" ;
+     //
+     // er is een transitionend event, zie https://developer.mozilla.org/en-US/docs/Web/Events/transitionend
+     // nadeel, opticy kan niet via dit systeem
+     //
+     this.opacity                    = 0            ;
+     this.oFieldScreen.style.opacity = this.opacity ;
+     this.obj_timer                  = window.setInterval( function() { me.timerEventStart() }, this.timerInterval );
+  } 
+
+  this.setButtonAction = function( iNr ) {
+     var me       = this ;
+     var cValue   = this.arrButtons[ iNr ].value ;
+     var oObj     = document.getElementById( this.idScreen + '_'+ iNr );
+     oObj.onclick = function() { me.actionButton( cValue ) } ;
+  }
+
+  this.actionButton = function ( cValue ) {
+     this.timerEnd() ;
+
+     var me = this ;
+
+     this.resultVale = cValue ;
+     this.opacity    = 1      ;
+     this.obj_timer  = window.setInterval( function() { me.timerEventEnd() }, this.timerInterval );
+  } 
+  
+  this.timerEventEnd = function() {
+     this.opacity -= this.opacityInterval ;
+     this.rotate  += this.rotateInterval  ;
+     this.transX  += this.transXInterval  ;
+
+     if ( this.opacity <= 0 ) { 
+        this.timerEnd();
+        this.oFieldScreen.style.display = "none" ; 
+        this.callAction( this.resultVale ) ;
+     } else {
+        this.oFieldScreen.style.opacity = this.opacity;
+        this.oFieldScreen.style.transform = "translate(" + this.transX + "%, -50%) rotate3d( 1,0,0," + this.rotate + "deg)" ;
+     }
+  }
+
+  this.timerEventStart = function() {
+     this.opacity += this.opacityInterval ;
+     this.rotate  -= this.rotateInterval  ;
+     this.transX  += this.transXInterval  ;
+
+     if ( this.opacity >= 1 ) { 
+        this.timerEnd();
+        this.oFieldScreen.style.opacity = 1 ; 
+        this.oFieldScreen.style.transform = "translate(-50%, -50%)" ;
+
+     } else {
+//        this.oFieldScreen.style.transform = "translate(-50%, -50%) rotate(" + this.rotate + "deg)" ;
+//        this.oFieldScreen.style.transform = "translate(-50%, -50%) rotate3d( 1,0,0," + this.rotate + "deg)" ;
+        this.oFieldScreen.style.transform = "translate(" + this.transX + "%, -50%) rotate3d( 1,0,0," + this.rotate + "deg)" ;
+
+
+        this.oFieldScreen.style.opacity = this.opacity;
+     }
+  }
+
+  this.timerEnd = function() {
+     if ( this.obj_timer ) {
+       window.clearInterval( this.obj_timer );
+       this.obj_timer = null ;
+     }
+
+  }
+}
+
+
+function ok( cVal ) {
+   alert( "the end: " + cVal );
+}
+
+function draw() {
+  var canvas = document.getElementById("canvas");
+  var ctx = canvas.getContext("2d");
+
+  var oNr = document.getElementById( "nummer" );
+
+  var oNr = new askScreen() ;
+
+//  oNr.arrData = [] ;
+//  for( var i = 20; i >= 0; i-- ) {  
+//    oNr.arrData.push( i ) ;
+//  }
+
+  oNr.start( ok ) ;
+
+
+}
+</script>
+<style>
+body {
+/*
+  background-color: blue ;
+*/
+}
+#divAskScreen {
+  position         : fixed ;
+  top              : 50%   ;
+  left             : 50%   ;
+  transform        : translate(-50%, -50%);
+  display          : none ;
+  background-color : rgba( 255, 255, 255, 0.84 );
+  font-weight      : 900  ;
+  border           :   1px solid black ;
+  padding-top      :  10px ;
+  padding-bottom   :  10px ;
+  padding-left     :  30px ;
+  padding-right    :  30px ;
+  font-size        : 500%  ;
+  box-shadow       : 10px 10px 6px #888888;
+}
+
+#divAskScreen_header {
+   font-size           : 50%     ;
+   border-bottom-style : solid   ;
+   border-color        : #737373 ;
+   color               : #5d0018 ; // #222264 ;
+   text-align          : center  ;
+   font-style          : italic  ;
+}
+
+#divAskScreen_body {
+   padding-top    : 10px ;
+   padding-bottom : 20px ;
+   text-shadow    :  0px 0px 20px grey;
+   white-space    : nowrap  ;
+   color          : #2a2a73 ; // #353558 ;
+}
+
+#divAskScreen_footer {
+   border-top-style : solid   ;
+   border-color     : #737373 ;
+}
+
+#divAskScreen_footer {
+   display: flex;
+   padding-top   : 5px ;
+   padding-bottom: 0px ;
+   flex-direction: row ;
+   width         : 100%;
+   align-items   : stretch;
+}
+
+#divAskScreen_footer button {
+  border           :  4px solid #4e5d4e ;
+  border-radius    : 10px   ;
+  text-align       : center ;
+  white-space      : nowrap ;
+  background-color : #f8fff9 ; // #effff2 ; // white  ;
+  color            : #3f804b;
+  font-weight      : 600    ;
+  margin-left      :   5px  ;
+  font-size        :  30%   ;
+  flex             :   1    ;
+}
+
+#divAskScreen_footer button:first-child {
+  margin-left      : 0px    ;
+}
+
+#divAskScreen_footer button:hover,#divAskScreen_footer button:focus {
+   background-color: #fff3f5 ; // LightGray ;
+   box-shadow      : 0px 0px 7px #fcff00 ; // #888888 ;
+   border-color    : #851d2c ; // Gray ;
+   color           : #c8001c  ;
+}
+
+</style>
+</head>
+<body onload="draw()">
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  Testing Testing testin testin testing testing testing testing testing   Testing Testing testin testin testing testing testing testing testing<BR>
+  <canvas id="canvas" width="300" height="300"></canvas>
+  <div id="divAskScreen">
+    <div id="divAskScreen_header"></div>
+    <div id="divAskScreen_body"></div>
+    <div id="divAskScreen_footer"></div>
+  </div>
+</body>
+</html>

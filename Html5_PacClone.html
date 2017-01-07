@@ -1,0 +1,2189 @@
+<html>
+<!--
+    Html5_PacClone.html
+    
+    Copyright (C) 2017 Gien van den Enden - gien.van.den.enden@gmail.com
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>. 
+
+-->
+<head>
+<meta charset="UTF-8">
+<title>Html5 PacClone</title>
+<meta name="description" content="Html5, css3 & javascript demo in PacMan format">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Suppress browser request for favicon.ico 
+http://stackoverflow.com/questions/5199902/isnt-it-silly-that-a-tiny-favicon-requires-yet-another-http-request-how-to-mak
+-->
+<link href=
+"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB+AMFQwUCSbPbRsAAAAdaVRYdENvbW1lbnQAAAAAAENyZWF0ZWQgd2l0aCBHSU1QZC5lBwAAAdNJREFUOMuNk71rVEEUxX/nzq6vihuxVxFiFSzthNQKgvoHiNYWgh+RIAELsfArlYWgRUoLiWJrJzapUopxMYWSYg2brInEzb5j8eatcVnBCzNchnPumXOGEftqcxYlaBnOEcxgpggmbToEq4j3TrzRHt2D9zCAanJvlqbhPOa6ggmEgdI1IkiYQPSAh068at2lr6xcBFwDrgC7RKYHlAYFoCxW7YWD58CTtDsHA3NZcBWzSw0WWCBhgqgHYuygRJzCbKs3yxFgCWjA3+B/qOMggGT41cBcRDRxdpiBJqtrOFBAsojSfLf5mhLths3pDNwPxpV6PbAANgYlXwg+D8zK+o/m8vRCv91AHN2nME59h+A15kPnpz5OPfZqZaQPcawRmWSUk1elPuq7VLVGS1u3WFJwvCbkdx9NvnCwMTBrEqsDs7K+E8vTj8q2ere5ibiUQ/yf5GXoGL6lRDuAl0B/xPvQDsZW3bEn0Q9xKAUnbc7EgQFrhqeIYpx3hPynr8aAEcliIYoHYFg0vJAoxqlX4eQzEflZnwkWh7luztGUuADcsJiQKAGXMbxMZPI24j6w1JrPn6murTvIiUmVnAVmLE4gDgNdxCfgHfCWoNuar77zb+X6y7m5gIJsAAAAAElFTkSuQmCC"
+ rel="icon" type="image/png"/> 
+<script type="application/javascript">
+
+function init() {
+    var oGame = new h5GamePacMan() ;
+    
+    oGame.init();
+    oGame.startGame();
+}
+
+function h5GamePacMan () {
+   this.idPlayField = "playfield" ; // element too set the playfield
+   this.idPlayKey   = "playkey"   ; // key tonen
+   this.idPlayScore = "playscore" ; // score tonen
+   this.idContainer = "container" ; // static element with fixed position
+
+   this.dom_playfield = null ;
+   this.dom_playkey   = null ;
+   this.dom_playscore = null ;
+   this.dom_container = null ;
+
+   this.xoff  = 0 ;  // x-offset playfield
+   this.yoff  = 0 ;  // y-offset playfield
+
+   this.obj_playfield = new h5PlayField();
+   this.obj_pacman    = new h5PacMan()   ;
+
+   this.x_pacman      = 0 ; // x position pacman in playfield
+   this.y_pacman      = 0 ; // y position pacman in playfield
+
+   this.x_move_cnt    = 1 ;  // x-pixel moved for each interval
+   this.y_move_cnt    = 1 ;  // y-pixel moved for each interval
+
+   this.x_move        = 0 ;  // x-pixel current move for each interval
+   this.y_move        = 0 ;  // y-pixel current move for each interval
+
+   this.time_interval =  10 ; // every x msec
+   this.obj_timer     = null; //
+
+   this.obj_key       = new h5KeyHandling() ;
+ 
+   this.iScore        = 0 ;
+   this.iNrGhosts     = 4 ; // aantal ghosts 
+   this.arrGhosts     = [] ;
+   this.startPostGhost= null ;
+
+
+   this.init = function () {
+      this.dom_playfield = document.getElementById( this.idPlayField );
+      this.dom_container = document.getElementById( this.idContainer ); 
+
+      this.dom_playkey   = document.getElementById( this.idPlayKey   ); 
+      this.dom_playscore = document.getElementById( this.idPlayScore ); 
+
+
+      this.obj_playfield.obj_parent = this.dom_container ; 
+      this.obj_pacman.obj_parent    = this.dom_container ; 
+
+
+      // create field too get it's size
+      this.obj_playfield.init() ;
+  
+      // set size of dom element too fit playfield
+      this.dom_playfield.style.width  = this.obj_playfield.i_width  + "px" ;
+      this.dom_playfield.style.height = this.obj_playfield.i_height + "px" ;
+
+      // playfield is has absolute poistion so calc offset
+      var rec_container = this.dom_container.getBoundingClientRect();
+      var rec_playfield = this.dom_playfield.getBoundingClientRect();
+
+      this.xoff  = rec_playfield.left - rec_container.left ;
+      this.yoff  = rec_playfield.top  - rec_container.top  ;
+
+      this.obj_playfield.obj_sprite.setPosition( this.xoff, this.yoff );
+
+      // pacman himself 
+      this.obj_pacman.init();
+      this.tegelPosToPacManPos( 4.5, 8 ) ;
+      this.setPacDirection( 'left' );
+      this.obj_pacman.show();
+      this.obj_pacman.timerStart();
+
+      // 4 ghosts
+      this.startPostGhost = {
+         xpos : 4.5 * this.obj_playfield.i_tegel_width + ( this.obj_playfield.i_tegel_width - this.obj_pacman.i_size ) / 2 ,
+         ypos : 4.0 * this.obj_playfield.i_tegel_width + ( this.obj_playfield.i_tegel_width - this.obj_pacman.i_size ) / 2
+      }
+
+      for( var iCnt = 0; iCnt < this.iNrGhosts; iCnt++ ) {
+         var oGhost = new h5Ghost() ;
+
+         this.arrGhosts.push( oGhost );
+
+         oGhost.obj_parent = this.dom_container ;
+
+         switch( iCnt ) {
+            case 0: oGhost.colorghost = "blue"   ; break ;
+            case 1: oGhost.colorghost = "green"  ; break ;
+            case 2: oGhost.colorghost = "red"    ; break ;
+            case 3: oGhost.colorghost = "yellow" ; break ;
+         } 
+
+         oGhost.mode_move = 'start'; // eerst naar buiten = start, run = zoek
+         oGhost.init(); 
+         oGhost.curr_direct = "none";
+         this.tegelPosToGhostPos( iCnt, 3.75 + iCnt / 2, 5 ) ;
+         oGhost.timerStart();
+      }
+      this.setGhostPositions();
+
+      // key handling
+      this.obj_key.init() ;
+   }
+
+
+   // start the game
+   this.startGame = function( lNext ) {
+      this.timerEnd();
+
+      // set all the points
+      this.obj_playfield.point_painting();
+      
+      // zet pacman op begin positie
+      this.tegelPosToPacManPos( 4.5, 8 ) ;
+      this.setPacDirection( 'left' );
+      this.obj_pacman.show();
+
+      // zet ghosts start positie & status 
+      for( var iCnt = 0; iCnt < this.iNrGhosts; iCnt++ ) {
+         var oGhost = this.arrGhosts[ iCnt ];
+
+         oGhost.mode_move = 'start'; // eerst naar buiten = start, run = zoek
+         oGhost.curr_direct = "none";
+         this.tegelPosToGhostPos( iCnt, 3.75 + iCnt / 2, 5 ) ;
+      }
+      this.setGhostPositions();
+
+      // score is zero
+      if ( lNext == true ) {
+         // next level
+      } else {
+         // new game/game over = reset score
+         this.iScore        = 0 ;
+         this.dom_playscore.innerHTML = this.iScore ;
+      }
+      
+      // aftel scherm   
+      var oStart = new goScreen ();
+      var me     = this ; 
+      oStart.start( function() { oStart = null; me.timerStart(); } );
+   }
+
+   this.setPacDirection = function ( cDirection ) {
+      if ( cDirection == this.obj_pacman.curr_direct && ( this.x_move != 0 || this.y_move != 0 )  ) {
+          return ;
+      }
+      var ixmove = 0 ;
+      var iymove = 0 ;
+ 
+//      switch( cDirection ) {
+//        case 'left'  : this.setPacMove( - this.x_move_cnt,                 0 ) ; break ;
+//        case 'right' : this.setPacMove(   this.x_move_cnt,                 0 ) ; break ;
+//        case 'up'    : this.setPacMove(                 0, - this.y_move_cnt ) ; break ;
+//        case 'down'  : this.setPacMove(                 0,   this.y_move_cnt ) ; break ;
+//      }
+
+//      this.dom_playkey.innerHTML = cDirection ;
+
+      // nieuwe positie
+      switch( cDirection ) {
+        case 'left'  : ixmove = - this.x_move_cnt ; break ;
+        case 'right' : ixmove =   this.x_move_cnt ; break ;
+        case 'up'    : iymove = - this.y_move_cnt ; break ;
+        case 'down'  : iymove =   this.y_move_cnt ; break ;
+      }
+
+      // check dat je niet 180 graden andere kant op kan
+      if ( ixmove == - this.x_move ) {
+          ixmove = 0 ;
+      }
+      if ( iymove == - this.y_move ) {
+          iymove = 0 ;
+      }
+
+      // check geldige positie, ja = maak definitief
+      if ( ixmove != 0 || iymove != 0 ) {
+         var ixpos = ixmove + this.x_pacman ;
+         var iypos = iymove + this.y_pacman ;
+
+         if (  this.isValidPosition( ixpos, iypos ) == true ) {
+            this.setPacMove( ixmove, iymove ) ; 
+         }
+      }
+   }
+
+   this.setPacMove = function ( i_xpos, i_ypos ) {
+      //
+      // controle
+      // alleen richting veranderen indien mogelijk
+      //
+      if ( i_xpos != 0 ) {
+         this.x_move = i_xpos ;
+         this.y_move = 0      ;
+
+         if (  this.x_move > 0 ) {
+             this.obj_pacman.curr_direct = "right" ;
+         } else {
+             this.obj_pacman.curr_direct = "left"  ;
+         }
+
+      } else {
+         this.x_move = 0      ;
+         this.y_move = i_ypos ;
+
+         if (  this.y_move > 0 ) {
+             this.obj_pacman.curr_direct = "down" ;
+         } else {
+             this.obj_pacman.curr_direct = "up"  ;
+         }
+      }
+
+   }
+
+   // zet positie ghost.
+   this.tegelPosToGhostPos = function ( iGhost, xpos_tegel, ypos_tegel ) {
+      var oGhost = this.arrGhosts[ iGhost ] ;
+
+      oGhost.x_ghost_pos = xpos_tegel * this.obj_playfield.i_tegel_width ;
+      oGhost.y_ghost_pos = ypos_tegel * this.obj_playfield.i_tegel_width ;
+
+      // pacman en ghost zijn even groot, zo pak pacman
+      oGhost.x_ghost_pos += ( this.obj_playfield.i_tegel_width - this.obj_pacman.i_size ) / 2 ;
+      oGhost.y_ghost_pos += ( this.obj_playfield.i_tegel_width - this.obj_pacman.i_size ) / 2 ;
+   }
+
+   this.setGhostPositions = function( ) {
+      var iCnt   ;
+      var oGhost ;
+      var iXpos  ;
+      var iYpos  ;
+      for( iCnt = 0 ; iCnt < this.arrGhosts.length; iCnt++ ) {
+          oGhost = this.arrGhosts[ iCnt ] ;
+
+          iXpos = this.xoff + oGhost.x_ghost_pos ; 
+          iYpos = this.yoff + oGhost.y_ghost_pos ;
+
+
+          oGhost.i_xpos = iXpos ;
+          oGhost.i_ypos = iYpos ;
+      }
+   }
+
+   this.ghostMove = function() {
+     // aflopen ghost array
+     // start mode = move naar begin pos
+     // run   mode = random bewegen -> link rechts, zelfde count als pacman gebruiker
+     // collision detect
+      var iCnt   ;
+      var oGhost ;
+      var iXpos  ;
+      var iYpos  ;
+      var lStart = false ;
+      var arrMoves = [] ;
+      for( iCnt = 0 ; iCnt < this.arrGhosts.length; iCnt++ ) {
+         oGhost = this.arrGhosts[ iCnt ] ;
+         if (  oGhost.mode_move == 'start' ) {
+            if ( lStart == true ) {
+               continue;
+            }
+            lStart = true ;
+            if (        oGhost.x_ghost_pos < this.startPostGhost.xpos ) { oGhost.x_ghost_pos++ ; 
+            } else if ( oGhost.x_ghost_pos > this.startPostGhost.xpos ) { oGhost.x_ghost_pos-- ; 
+            } else if ( oGhost.y_ghost_pos > this.startPostGhost.ypos ) { oGhost.y_ghost_pos-- ; 
+            } else if ( oGhost.y_ghost_pos < this.startPostGhost.ypos ) { oGhost.y_ghost_pos++ ; 
+            } else {
+              oGhost.mode_move = 'run'; // ok moving
+              // determine start direction
+              if ( iCnt % 2  ==  0 ) {
+                 oGhost.eyeposition = "left" ;
+                 oGhost.x_move = -1 ;
+                 oGhost.y_move =  0 ;
+              } else {
+                 oGhost.eyeposition = "right" ;
+                 oGhost.x_move =  1 ;
+                 oGhost.y_move =  0 ;
+              }
+            }
+            continue ; 
+         } else {
+            // random move
+            arrMoves = [] ;
+            if (  oGhost.eyeposition != 'right' && this.isValidPosition( oGhost.x_ghost_pos - 1, oGhost.y_ghost_pos     ) == true ) {
+               arrMoves.push( { xpos: -1, ypos: 0, move:'left' } );
+            }  
+            if (  oGhost.eyeposition != 'left' && this.isValidPosition( oGhost.x_ghost_pos + 1, oGhost.y_ghost_pos     ) == true ) {
+               arrMoves.push( { xpos:  1, ypos: 0, move:'right' } );
+            }  
+            if (  oGhost.eyeposition != 'down' && this.isValidPosition( oGhost.x_ghost_pos    , oGhost.y_ghost_pos - 1 ) == true ) {
+               arrMoves.push( { xpos:  0, ypos: -1, move:'up' } );
+            }  
+            if ( oGhost.eyeposition != 'up'    &&  this.isValidPosition( oGhost.x_ghost_pos    , oGhost.y_ghost_pos + 1 ) == true ) {
+               arrMoves.push( { xpos:  0, ypos:  1, move:'down' } );
+            }  
+            if ( arrMoves.length == 1 ) {
+                oGhost.x_ghost_pos += arrMoves[0].xpos ;
+                oGhost.y_ghost_pos += arrMoves[0].ypos ;
+                oGhost.eyeposition  = arrMoves[0].move ;
+            } else if ( arrMoves.length > 1 ) {
+                var iNr = Math.floor( Math.random() * arrMoves.length );
+
+                oGhost.x_ghost_pos += arrMoves[ iNr ].xpos ;
+                oGhost.y_ghost_pos += arrMoves[ iNr ].ypos ;
+                oGhost.eyeposition  = arrMoves[ iNr ].move ;
+            }
+            oGhost.curr_direct = oGhost.eyeposition ;
+            // positie controle
+            if ( oGhost.x_ghost_pos <= 4 ) {
+               oGhost.x_ghost_pos = this.obj_playfield.i_width - 6 ;
+            }
+            if ( oGhost.x_ghost_pos >= this.obj_playfield.i_width - 2 ) {
+               oGhost.x_ghost_pos = 6 ;  
+            }
+            if ( oGhost.y_ghost_pos <= 4 ) {
+               oGhost.y_ghost_pos = this.obj_playfield.i_height - 6 ;
+            }
+            if ( oGhost.y_ghost_pos >= this.obj_playfield.i_height - 4 ) {
+               oGhost.y_ghost_pos = 6 ;  
+            }
+
+         }
+      
+      }
+      this.setGhostPositions() ;
+   }
+
+   // zet tegel position into pacman coordinates
+   this.tegelPosToPacManPos = function ( xpos_tegel, ypos_tegel ) {
+
+      this.x_pacman = xpos_tegel * this.obj_playfield.i_tegel_width ;
+      this.y_pacman = ypos_tegel * this.obj_playfield.i_tegel_width ;
+
+      this.x_pacman += ( this.obj_playfield.i_tegel_width - this.obj_pacman.i_size ) / 2 ;
+      this.y_pacman += ( this.obj_playfield.i_tegel_width - this.obj_pacman.i_size ) / 2 ;
+
+      this.setPacManPos();
+   }
+
+   // set pacman
+   this.setPacManPos = function() {
+      var iXpos = this.xoff + this.x_pacman ; 
+      var iYpos = this.yoff + this.y_pacman ;
+
+      this.obj_pacman.i_xpos = iXpos ;
+      this.obj_pacman.i_ypos = iYpos ;
+   }
+ 
+   // check of er een point is op de pacman positie
+   this.pacCheckPoint = function() {
+      var iCnt  ;
+      var iLen  = this.obj_playfield.arr_points.length ; 
+      var oItem ;
+      var lGetAll = true ;
+      for( iCnt = 0; iCnt < iLen; iCnt++ ) {
+         oItem = this.obj_playfield.arr_points[ iCnt ] ;
+         if ( oItem != null ) { 
+            lGetAll = false ; 
+            if (  oItem.xpos > this.x_pacman + 4 && oItem.xpos < this.x_pacman - 4 + this.obj_pacman.i_size 
+               && oItem.ypos > this.y_pacman + 4 && oItem.ypos < this.y_pacman - 4 + this.obj_pacman.i_size 
+               ) {
+               // delete point
+               this.obj_playfield.point_draw( oItem.xpos, oItem.ypos, true );
+               this.obj_playfield.arr_points[ iCnt ] = null ; 
+
+               this.iScore++ ;
+               this.dom_playscore.innerHTML = this.iScore ;
+            }
+         }    
+      }
+      // get al the points
+      if ( lGetAll == true ) {
+         this.gameOver( true ) ;
+      }
+   }
+
+   // verplaasts pacman
+   this.pacManMove = function() {
+      var iXpos = this.x_pacman ;
+      var iYpos = this.y_pacman ;
+
+      if ( this.x_pacman >= 0 ) {
+         iXpos += this.x_move ;
+      }
+      if ( this.y_pacman >= 0 ) {
+         iYpos += this.y_move ;
+      }
+
+      // check coordinaten zodat deze binnen het veld blijven
+      // vaste waarden zouden eigenlijk 2x move grote moeten zijn
+      if ( iXpos <= 4 ) {
+         iXpos = this.obj_playfield.i_width - 6 ;
+      }
+      if ( iXpos >= this.obj_playfield.i_width - 2 ) {
+         iXpos = 6 ;  
+      }
+      if ( iYpos <= 4 ) {
+         iYpos = this.obj_playfield.i_height - 6 ;
+      }
+      if ( iYpos >= this.obj_playfield.i_height - 4 ) {
+         iYpos = 6 ;  
+      }
+
+      if ( this.isValidPosition( iXpos, iYpos ) == false ) {
+         iXpos = this.x_pacman ; 
+         iYpos = this.y_pacman ;
+
+         // kan niet verder op de huidige weg, verander richting
+         if ( this.y_move != 0 ) {
+           // verander x
+           if ( this.isValidPosition( iXpos + this.x_move_cnt, iYpos ) == true  ) {
+              this.setPacMove(   this.x_move_cnt, 0 );
+           } else {
+              this.setPacMove( - this.x_move_cnt, 0 );
+           }
+         } else {
+           // verander y
+           if ( this.isValidPosition( iXpos, iYpos + this.y_move_cnt ) == true  ) {
+              this.setPacMove( 0,   this.y_move_cnt );
+           } else {
+              this.setPacMove( 0, - this.y_move_cnt );
+           }
+         }
+      }
+
+      this.x_pacman = iXpos ; 
+      this.y_pacman = iYpos ;
+
+      this.setPacManPos();
+    }
+
+    // is dit een valid positie voor pacman
+    this.isValidPosition = function( iXpos, iYpos ) {
+      var bResult   = false ;
+
+      var cTegel    = this.giveTegelPosition( iXpos, iYpos) ;
+      var arrSpace  = this.giveTegelSpace( cTegel.h, cTegel.v );
+
+      if ( arrSpace && arrSpace.length > 0 ) {
+         var iTx = iXpos - cTegel.ixpos ; // coordinaat x in tegel
+         var iTy = iYpos - cTegel.iypos ; // coordinaat y in tegel
+
+         var oPos  ;
+         var iCnt  ;
+
+         for ( iCnt in arrSpace  ) {
+            oPos = arrSpace[ iCnt ] ;
+            // oPos.xstart
+            // oPos.ystart
+            // oPos.xend
+            // oPos.yend
+            
+            // iTx & iTy moeten groter of gelijk aan oPos.xstart  & oPos.ystart
+            // iTx & iTy kleiner of gelijk aan iPos.xend & oPos.yend
+            if (  iTx  >= oPos.xstart 
+               && iTy  >= oPos.ystart
+               && iTx  <= oPos.xend 
+               && iTy  <= oPos.yend 
+               ) {
+
+               bResult = true ; // jippie, geldige coordinaten
+               break ;
+            } 
+
+	 }	
+       } 
+       return bResult ;
+    }
+
+    // Geef tegel van gegeven position
+    this.giveTegelPosition = function( iXpos, iYpos ) {
+      var tegel = { h:-1, v:-1} ;
+
+      var h = Math.floor( iXpos / this.obj_playfield.i_tegel_width ) ;
+      var v = Math.floor( iYpos / this.obj_playfield.i_tegel_width ) ;
+
+      // tegel in array
+      tegel.h = h ;
+      tegel.v = v ;
+
+      // linker boven hoek tegel
+      tegel.ixpos = tegel.h * this.obj_playfield.i_tegel_width ; 
+      tegel.iypos = tegel.v * this.obj_playfield.i_tegel_width ;
+
+      return tegel;
+    }
+
+    // geef geldige tegel position voor gegeven tegel
+    this.giveTegelSpace = function( iHor, iVer) {
+       // var tegel_pos   = this.givePacManTegel();  // tegel positie
+       var cTegel      = this.obj_playfield.arr_field[ iVer ][ iHor ] ; // tegel type
+
+       var iBorderSize = Math.floor( ( this.obj_playfield.i_tegel_width - this.obj_pacman.i_size ) / 2 ) ; // afstand van rand tot positie pacman in tegel
+       var iTegelSize  = this.obj_playfield.i_tegel_width ;
+       var iPacSize    = 0 ; // this.obj_pacman.i_size ;  geef altijd pos linker boven hoek pacman
+
+       var arrSpace = [] ;
+
+       switch( cTegel ) {
+          case 'LB':  
+             // vanaf midden naar rechts  is open
+             arrSpace.push (  { xstart:iBorderSize, ystart:iBorderSize, xend: iTegelSize            , yend: iBorderSize + iPacSize   }  )  ;
+
+             // vanaf midden naar beneden is open
+             arrSpace.push (  { xstart:iBorderSize, ystart:iBorderSize, xend: iBorderSize + iPacSize, yend: iTegelSize               }  )  ;
+             break ;
+
+          case 'MB':
+	     // horizontaal open
+             arrSpace.push (  { xstart:0, ystart:iBorderSize, xend: iTegelSize            , yend: iBorderSize + iPacSize   }  )  ;
+
+             // vanaf midden naar beneden is open
+             arrSpace.push (  { xstart:iBorderSize, ystart:iBorderSize, xend: iBorderSize + iPacSize, yend: iTegelSize               }  )  ;
+             break ;
+
+          case 'RB':  
+             // vanaf x-start naar midden is open
+             arrSpace.push (  { xstart:0          , ystart:iBorderSize, xend: iBorderSize + iPacSize, yend: iBorderSize + iPacSize   }  )  ;
+
+             // van midden naar beneden is open
+             arrSpace.push (  { xstart:iBorderSize, ystart:iBorderSize, xend: iBorderSize + iPacSize, yend: iTegelSize               }  )  ;
+             break ;
+
+          case 'H' :
+             // horizontaal open
+             arrSpace.push (  { xstart:0          , ystart:iBorderSize, xend: iTegelSize            , yend: iBorderSize + iPacSize   }  )  ;
+             break ;
+
+          case 'V' :  
+             // verticaal open
+             arrSpace.push (  { xstart:iBorderSize, ystart:0          , xend: iBorderSize + iPacSize, yend: iTegelSize               }  )  ;
+             break ;
+
+          case 'M' :
+             // horizontaal open
+             arrSpace.push (  { xstart:0           , ystart:iBorderSize , xend: iTegelSize            , yend: iBorderSize + iPacSize   }  )  ;
+
+             // verticaal open  
+             arrSpace.push (  { xstart:iBorderSize , ystart:0           , xend: iBorderSize + iPacSize, yend: iTegelSize               }  )  ;
+             break ;
+
+          case 'LO': 
+             // van midden naar rechts is open
+             arrSpace.push (  { xstart:iBorderSize, ystart:iBorderSize, xend: iTegelSize            , yend: iBorderSize + iPacSize   }  )  ;
+
+             // van y-start naar midden is open
+             arrSpace.push (  { xstart:iBorderSize , ystart:0         , xend: iBorderSize + iPacSize, yend: iBorderSize + iPacSize   }  )  ;
+
+             break ;
+
+          case 'MO':
+             // horizontaal open
+             arrSpace.push (  { xstart:0          , ystart:iBorderSize, xend: iTegelSize            , yend: iBorderSize + iPacSize   }  )  ;
+
+             // van y-start naar midden is open
+             arrSpace.push (  { xstart:iBorderSize , ystart:0         , xend: iBorderSize + iPacSize, yend: iBorderSize + iPacSize   }  )  ;
+             break ;
+
+          case 'RO':  
+             // van x-start naar midden is open
+             arrSpace.push (  { xstart:0          , ystart:iBorderSize, xend: iBorderSize + iPacSize, yend: iBorderSize + iPacSize   }  )  ;
+
+             // van y-start naar midden is open
+             arrSpace.push (  { xstart:iBorderSize , ystart:0         , xend: iBorderSize + iPacSize, yend: iBorderSize + iPacSize   }  )  ;
+              
+             break ;
+
+          case 'ML':  
+             // van midden naar rechts is open
+             arrSpace.push (  { xstart:iBorderSize, ystart:iBorderSize, xend: iTegelSize            , yend: iBorderSize + iPacSize   }  )  ;
+
+
+             // verticaal is open
+             arrSpace.push (  { xstart:iBorderSize, ystart:0          , xend: iBorderSize + iPacSize, yend: iTegelSize               }  )  ;
+
+             break ;
+
+          case 'MR':  
+             // van x-start naar midden is open
+             arrSpace.push (  { xstart:0          , ystart:iBorderSize, xend: iBorderSize + iPacSize, yend: iBorderSize + iPacSize   }  )  ;
+
+             // verticaal is open
+             arrSpace.push (  { xstart:iBorderSize, ystart:0          , xend: iBorderSize + iPacSize, yend: iTegelSize               }  )  ;
+             break ;
+       }
+       return arrSpace ;
+   }
+
+   // controleer of er een collision is
+   this.checkCollision = function() {
+      var iCnt   ;
+      var oGhost ;
+      var lColl = false ;
+      for( iCnt = 0 ; iCnt < this.arrGhosts.length; iCnt++ ) {
+         oGhost = this.arrGhosts[ iCnt ] ;
+
+         // oGhost.x_ghost_pos 
+         // oGhost.y_ghost_pos 
+         // ghost & pacman zijn even groot
+         // this.obj_pacman.i_size
+         // this.x_pacman 
+         // this.y_pacman 
+         // 8 = overlap pixels allowed
+         if (  this.x_pacman      + this.obj_pacman.i_size - 8 <= oGhost.x_ghost_pos  
+            || this.y_pacman      + this.obj_pacman.i_size - 8 <= oGhost.y_ghost_pos  
+            || oGhost.x_ghost_pos + this.obj_pacman.i_size - 8 <= this.x_pacman  
+            || oGhost.y_ghost_pos + this.obj_pacman.i_size - 8 <= this.y_pacman  
+            ) {
+            // no collision, do nothing
+         } else {
+            lColl = true ;
+            break ;
+         }
+      }
+      if ( lColl == true ) {
+         this.gameOver( false ) ;
+      }
+   }
+
+   this.gameOver = function ( lOk ) {
+      this.timerEnd() ;
+
+      var oStart = new goScreen ();
+      var me     = this ; 
+
+      oStart.timerInterval =  100 ;
+      oStart.sizeStart     = 2000 ;
+
+      if ( lOk == true ) { 
+         // jippie veld leeg
+         oStart.arrData = [ 'Winner' ];
+      } else {
+         oStart.arrData = [ 'Oops' ];
+
+         // 1 live gone...
+         var me = this ;
+         this.obj_timer = window.setInterval( function() { me.timerGhostsVictory() }, 500 ); 
+      }
+      oStart.start( function() { oStart = null; me.timerNextAction( lOk ) } );
+
+   }
+   this.timerGhostsVictory = function() {
+      if      ( this.obj_pacman.curr_direct == "right" ) { this.obj_pacman.curr_direct = "down"  }
+      else if ( this.obj_pacman.curr_direct == "down"  ) { this.obj_pacman.curr_direct = "left"  }
+      else if ( this.obj_pacman.curr_direct == "left"  ) { this.obj_pacman.curr_direct = "up"    }
+      else if ( this.obj_pacman.curr_direct == "up"    ) { this.obj_pacman.curr_direct = "right" }
+   }
+   // game end, next action
+   this.timerNextAction = function( lOk ) {
+      this.timerEnd();
+      // console.log( "next actie: " + lOk ) ;
+      var oAsk = new askScreen();
+      var me   = this ;
+      if ( lOk == true ) {
+         oAsk.txtQuestion = 'Next level';
+      } else {
+         oAsk.txtQuestion = 'Game over';
+      }
+      oAsk.start( function(){ oAsk = null; me.startGame( lOk ) } );
+   }
+
+   this.keyHandling = function() {
+      var iKey      = this.obj_key.getKey();
+      var cDirection = '' ;
+      // left arrow 	37
+      // up arrow 	38
+      // right arrow 	39
+      // down arrow 	40 
+
+      switch( iKey ) {
+         case 37: this.setPacDirection( 'left'  ); cDirection = "left"  ; break; 
+         case 38: this.setPacDirection( 'up'    ); cDirection = "up"    ; break; 
+         case 39: this.setPacDirection( 'right' ); cDirection = "right" ; break; 
+         case 40: this.setPacDirection( 'down'  ); cDirection = "down"  ; break; 
+         // escape, stop timers
+         case 27: this.timerEnd(); break ;
+      }
+      this.dom_playkey.innerHTML = cDirection;
+
+   }
+
+   this.timerStart = function() {
+       this.timerEnd();
+    
+       var me = this ;
+       this.obj_timer = window.setInterval( function() { me.timerEvent() }, this.time_interval ); 
+   }
+   this.timerEnd = function () {
+      if ( this.obj_timer ) { 
+          window.clearInterval( this.obj_timer );
+          this.obj_timer = null ;
+      }
+   }
+
+   this.timerEvent = function() {
+      this.keyHandling()   ;
+      this.pacManMove()    ;
+      this.pacCheckPoint() ;
+      this.ghostMove()     ; 
+      this.checkCollision();
+   }
+
+}
+
+
+
+//
+// h5KeyHandling: key object
+// ..............
+// - remember last pushed key (from document) - up / down events = current key
+//
+// getKey : get current keycode
+//
+function h5KeyHandling() {
+   this.lastKeyCode = 0 ;
+
+   this.init = function() {
+      var me = this ;
+
+      document.body.addEventListener('keydown', function(event) { me.keyDown.call( me, event) }, false);
+      document.body.addEventListener('keyup'  , function(event) { me.keyUp.call(   me, event) }, false);
+   }
+
+   this.keyDown = function( event ) {
+      this.lastKeyCode = event.which || event.keyCode ;
+   }
+   this.keyUp = function( event ) {
+      this.lastKeyCode = 0 ;
+   }
+
+   // https://www.cambiaresearch.com/articles/15/javascript-char-codes-key-codes
+   // left arrow 	37
+   // up arrow 		38
+   // right arrow 	39
+   // down arrow 	40 
+   this.getKey = function() {
+      return this.lastKeyCode ;
+   }
+}
+
+var h5_unique_id = 1 ; // uniqie id generator
+
+//
+// h5Sprite:
+// .........
+// init       : create canvas
+// show       : display (show) canvas 
+// hide       : hide canvas
+// setPosition: set absolute position
+// addPosition: set relative position
+// getContext : get canvas context (2d)
+//
+function h5Sprite() {
+   this.obj_canvas = null ; // canvas object
+   this.id_canvas  = ""   ; // canvas id, indien leeg automatisch gegenereerd
+
+   this.obj_parent = null ; // canvas parent object, indien leeg gekoppeld aan document
+
+   this.i_width    = 100  ; // grote canvas
+   this.i_height   = 100  ;
+   this.i_xpos     =   0  ; // coordianten canvas
+   this.i_ypos     =   0  ;
+
+   this.c_style_position   = "absolute" ;
+   this.c_style_background = "#FFFFFF"  ;
+   this.c_style_border     = "1px solid #ABABAB";
+   this.c_style_display    = "none"     ;  // block
+
+   // create the canvas
+   this.init = function() {
+      this.obj_canvas = document.createElement( 'canvas' );
+      
+      // genereer unique id indien niet aanwezig
+      if ( ! this.id_canvas ) {
+         this.id_canvas = "id_canvas_" + h5_unique_id++ ;
+      }
+      // zet attributen
+      this.obj_canvas.setAttribute( 'id', this.id_canvas ) ;
+
+      this.obj_canvas.setAttribute( 'width' , this.i_width  ); 
+      this.obj_canvas.setAttribute( 'height', this.i_height );
+
+      this.obj_canvas.style.left = this.i_xpos  + "px" ;
+      this.obj_canvas.style.top  = this.i_ypos  + "px" ;
+
+      this.obj_canvas.style.position  = this.c_style_position   ;
+      this.obj_canvas.style.backgrond = this.c_style_background ;
+      this.obj_canvas.style.border    = this.c_style_border     ;
+      this.obj_canvas.style.display   = this.c_style_display    ;
+
+
+      // koppel canvas
+      if ( ! this.obj_parent ) {
+         this.obj_parent = document.body ;
+      }
+      this.obj_parent.appendChild( this.obj_canvas );
+   }
+
+
+   this.show = function() {
+      this.c_style_display = "block";
+      this.obj_canvas.style.display  = this.c_style_display ;
+   }
+   this.hide = function() {
+      this.c_style_display = "none"; 
+      this.obj_canvas.style.display  = this.c_style_display ;
+   }
+   this.setPosition = function( x, y ) {
+      this.i_xpos     =   x  ; // coordianten canvas
+      this.i_ypos     =   y  ;
+
+      this.obj_canvas.style.left = this.i_xpos  + "px" ;
+      this.obj_canvas.style.top  = this.i_ypos  + "px" ;
+   }
+   this.addPosition = function( x_delta, y_delta ) {
+      if ( x_delta ) {
+         this.i_xpos += x_delta ;
+      }
+      if ( y_delta ) {
+         this.i_ypos += y_delta ;
+      }
+      this.obj_canvas.style.left = this.i_xpos  + "px" ;
+      this.obj_canvas.style.top  = this.i_ypos  + "px" ;
+   }
+   this.getContext = function() {
+      return this.obj_canvas.getContext("2d");
+   }
+}
+
+//
+// h5PacMan:
+// .........
+// init       : init object
+// show       : show 
+// hide       : hide, also stop timer
+// timerStart : start timer too animate 
+// timerEnd   : end timer for animate
+//
+function h5PacMan () {
+   this.i_size       = 34 ; // size of pacman
+
+   this.i_nrimages   = 5 ; // aantal images per site
+   this.i_maxdegreed = 50 ; // max graden mond open
+
+                //  1   2   3   4   5   6   7   8 
+   this.arr_deg = [ 1, 10, 20, 30, 40, 50, 60, 70  ];
+
+   this.i_xpos     =   0  ; // coordianten canvas
+   this.i_ypos     =   0  ;
+
+                            // position in array    
+   this.i_start_up    = 0 ;
+   this.i_start_left  = this.i_start_up   + this.i_nrimages ;
+   this.i_start_down  = this.i_start_left + this.i_nrimages ;
+   this.i_start_right = this.i_start_down + this.i_nrimages ;
+
+   this.c_background  = "white"   ;
+   this.c_color       = "#f68d2e" ; // "yellow"  ; 
+   this.c_color_dark  = "#d8db03" ;
+   this.c_zindex      = "1"       ;
+
+   this.obj_parent    = null      ; // canvas parent object, indien leeg gekoppeld aan document
+
+   this.arr_image     = new Array(); // array van alle images (canvas)
+
+   this.curr_direct   = "left" ; // currrent direction
+   this.curr_pos      = 0      ; // current position
+   this.curr_cnt      = 1      ; // counter up/down
+   this.last_pos      = -1     ; // last position
+
+   this.time_interval = 100    ; 
+   this.obj_timer     = null   ;
+   
+   this.init_pacman = function ( iCnt, cDirection ) {
+      var obj_sprite                = new h5Sprite() ;
+
+      obj_sprite.obj_parent         = this.obj_parent ;
+
+      obj_sprite.i_width            = this.i_size ;
+      obj_sprite.i_height           = this.i_size ;
+      obj_sprite.c_style_border     = "0px";
+
+      obj_sprite.c_style_background = this.c_background ;
+      obj_sprite.init();
+
+      obj_sprite.obj_canvas.style.zIndex = this.c_zindex ;
+
+
+      var ctx = obj_sprite.getContext();
+
+      var grd = ctx.createLinearGradient(0, 0, 150 * 2 , 150);
+
+      grd.addColorStop(0, this.c_color      ); // light 
+      grd.addColorStop(1, this.c_color_dark ); // dark 
+
+      ctx.fillStyle = grd;
+
+      var iposx = this.i_size / 2 ;
+      var iposy = this.i_size / 2 ;
+      var isize = this.i_size / 2 ;
+      var imount = this.arr_deg[ iCnt ]; //  this.i_maxdegreed / ( iCnt + 1 ) ;
+
+      ctx.arc( iposx , iposy , isize, Math.PI * ( 0 + imount ) / 180, Math.PI * ( 0 + imount ) / -180, false );
+      ctx.lineTo( iposx , iposy );
+
+      // ctx.shadowColor = "#ced000";
+      // ctx.shadowBlur = 20;
+      // ctx.shadowOffsetX = 0;
+      // ctx.shadowOffsetY = 0;
+
+      ctx.fill();
+
+      // default is right
+      if        ( cDirection == "up" ) {
+         obj_sprite.obj_canvas.style.transform = "rotate(270deg)"; 
+      } else if ( cDirection == "left" ) {
+         obj_sprite.obj_canvas.style.transform = "rotate(180deg)"; 
+      } else if ( cDirection == "down" ) {
+         obj_sprite.obj_canvas.style.transform = "rotate(90deg)"; 
+      }
+
+      return obj_sprite ;
+   }
+
+   this.init = function() {
+      var iCnt ;
+      for( iCnt = 0; iCnt < this.i_nrimages; iCnt++ ) {
+         this.arr_image[ this.i_start_up    + iCnt ] = this.init_pacman( iCnt, "up"    );
+         this.arr_image[ this.i_start_left  + iCnt ] = this.init_pacman( iCnt, "left"  );
+         this.arr_image[ this.i_start_down  + iCnt ] = this.init_pacman( iCnt, "down"  );
+         this.arr_image[ this.i_start_right + iCnt ] = this.init_pacman( iCnt, "right" );
+      }
+   }
+
+   this.getArrayPos = function ( iPos, cDirection ) {
+      var iStart = 0 ;
+      if      ( cDirection == "up"   ) { iStart = this.i_start_up   ; }
+      else if ( cDirection == "left" ) { iStart = this.i_start_left ; }
+      else if ( cDirection == "down" ) { iStart = this.i_start_down ; } 
+      else {                             iStart = this.i_start_right; }
+
+      return iStart + iPos ;
+   }
+   this.getCurrentPos = function () {
+      return this.getArrayPos( this.curr_pos, this.curr_direct );
+   }
+
+   this.show = function() {
+     var obj_sprite ;
+     if ( this.last_pos >= 0 ) {
+       obj_sprite = this.arr_image[ this.last_pos ] ;
+       obj_sprite.hide();
+     } 
+     this.last_pos = this.getCurrentPos() ;
+
+     obj_sprite = this.arr_image[ this.last_pos ] ;
+     obj_sprite.setPosition( this.i_xpos, this.i_ypos ) ;
+     obj_sprite.show();
+
+   }
+   this.hide = function() {
+     this.timerEnd(); 
+     if ( this.last_pos >= 0 ) {
+       var obj_sprite = this.arr_image[ this.last_pos ] ;
+       obj_sprite.hide();
+       this.last_pos = -1; 
+     }
+   }
+   this.nextImage = function() {
+      // this.hide();
+      this.curr_pos += this.curr_cnt ;
+      if ( this.curr_pos < 0 ) {
+         this.curr_pos = 0 ;
+         this.curr_cnt = 1 ;
+      }
+      if ( this.curr_pos >= this.i_nrimages ) { 
+         this.curr_pos = this.i_nrimages - 1  ;
+         this.curr_cnt = -1 ;
+      }
+      this.show();
+   }
+   this.timerStart = function() {
+       this.timerEnd();
+    
+       var me = this ;
+       window.setInterval( function() { me.nextImage() }, this.time_interval ); 
+   }
+   this.timerEnd = function () {
+      if ( this.obj_timer ) { 
+          window.clearInterval( this.obj_timer );
+          this.obj_timer = null ;
+      }
+   }
+}
+
+
+//
+// h5Ghost:
+// .........
+// init       : init object
+// show       : show 
+// hide       : hide, also stop timer
+// timerStart : start timer too animate 
+// timerEnd   : end timer for animate
+//
+function h5Ghost () {
+   this.realsize   =  34 ; // werkelijke grote
+
+   // data draw ghost
+   this.ybottom    = 400 ; // grote van tekenen
+   this.wavheigth  =  30 ;
+   this.xwidth     = 400 ;
+//   this.xgradstart =   0 ; // stap grote 30 aanbevolen, 360 graden nodig = 12 stappen
+   this.eyewidth   =  24 ;
+   this.linewidth  =   8 ;
+   this.headarc    = 160 ;
+
+   this.xgradwidth = 360 * 2.5 ;
+
+   this.colorghost = 'blue'   ;
+   this.colorline  = 'yellow' ;
+   this.coloreye   = "rgba(255, 255, 255, 1.0)" ; // transparent
+
+   this.eyeposition = 'left'; // up, down, left, right, none
+
+   // sprite data
+   this.obj_parent    = null ; // parent
+   this.c_background  = "white"   ;
+   this.c_zindex      = "1"       ;
+
+   this.i_nrimages   = 12 ; // aantal images per site
+   this.arr_image    = new Array(); // array van alle images (canvas)
+
+                            // position in array    
+   this.i_start_up    = 0 ;
+   this.i_start_left  = this.i_start_up    + this.i_nrimages ;
+   this.i_start_down  = this.i_start_left  + this.i_nrimages ;
+   this.i_start_right = this.i_start_down  + this.i_nrimages ;
+   this.i_start_none  = this.i_start_right + this.i_nrimages ;
+
+   this.i_xpos     =   0  ; // coordianten canvas
+   this.i_ypos     =   0  ;
+
+   this.curr_direct   = "none" ; // currrent direction
+   this.curr_pos      = 0      ; // current position
+   this.curr_cnt      = 1      ; // counter up/down
+   this.last_pos      = -1     ; // last position
+
+   this.time_interval = 100    ; 
+   this.obj_timer     = null   ;
+
+   this.init_ghost = function ( iCnt, cDirection ) {
+      var x, y, ctx, xgradstart ;
+
+      var obj_sprite                = new h5Sprite() ;
+
+      obj_sprite.obj_parent         = this.obj_parent ;
+
+      obj_sprite.i_width            = this.realsize ;
+      obj_sprite.i_height           = this.realsize ;
+      obj_sprite.c_style_border     = "0px";
+
+      obj_sprite.c_style_background = this.c_background ;
+      obj_sprite.init();
+
+      obj_sprite.obj_canvas.style.zIndex = this.c_zindex ;
+
+      xgradstart = this.xgradwidth * iCnt / this.i_nrimages ;
+
+      ctx = obj_sprite.getContext();
+
+      ctx.save();
+
+      // scale vertcial
+      ctx.scale( this.realsize / this.xwidth, this.realsize / ( this.ybottom + this.wavheigth ) );
+
+
+      ctx.beginPath();
+
+      ctx.moveTo( this.xwidth / 2 ,0);
+      ctx.arcTo( 0 ,0, 0, this.headarc , this.headarc);
+
+      for( x=0; x <= this.xgradwidth ; x+=1 ){
+         y = this.ybottom + Math.sin( ( x + xgradstart ) * Math.PI / 180) * this.wavheigth ;
+         ctx.lineTo( x * this.xwidth / this.xgradwidth ,y );
+      }
+
+      ctx.arcTo( x * this.xwidth / this.xgradwidth - 1 ,0, this.xwidth / 2, 0 , this.headarc );
+
+      ctx.closePath();
+
+      ctx.lineWidth   = this.linewidth  ;
+      ctx.fillStyle   = this.colorghost ;
+      ctx.fill();
+      ctx.strokeStyle = this.colorline  ;
+      ctx.stroke();  
+
+      // scale vertcial 
+      ctx.scale(1, 2);
+
+      switch( cDirection ) {
+       case 'up':
+          ctx.beginPath();
+          ctx.arc(    this.xwidth / 2 - this.eyewidth * 3 / 2                , this.ybottom / 2 - this.ybottom / 3 , this.eyewidth, 0, 2 * Math.PI, false );
+
+          ctx.moveTo( this.xwidth / 2 + this.eyewidth * 3 / 2 + this.eyewidth, this.ybottom / 2 - this.ybottom / 3 );
+          ctx.arc(    this.xwidth / 2 + this.eyewidth * 3 / 2                , this.ybottom / 2 - this.ybottom / 3 , this.eyewidth, 0, 2 * Math.PI, false );
+          break ; 
+
+       case 'down':
+         ctx.beginPath();
+         ctx.arc(    this.xwidth / 2 - this.eyewidth * 3 / 2                 , this.ybottom / 2 - this.ybottom / 5 , this.eyewidth, 0, 2 * Math.PI, false );
+
+         ctx.moveTo( this.xwidth / 2 + this.eyewidth * 3 / 2 + this.eyewidth , this.ybottom / 2 - this.ybottom / 5 );
+         ctx.arc(    this.xwidth / 2 + this.eyewidth * 3 / 2                 , this.ybottom / 2 - this.ybottom / 5 , this.eyewidth, 0, 2 * Math.PI, false );
+         break ; 
+
+      case 'left':
+         ctx.beginPath();
+         ctx.arc(    this.xwidth / 2 - this.xwidth / 3                                    , this.ybottom / 2 - this.ybottom / 4, this.eyewidth, 0, 2 * Math.PI, false );
+
+         ctx.moveTo( this.xwidth / 2 - this.xwidth / 3 + this.eyewidth * 3 + this.eyewidth, this.ybottom / 2 - this.ybottom / 4 );
+         ctx.arc(    this.xwidth / 2 - this.xwidth / 3 + this.eyewidth * 3                , this.ybottom / 2 - this.ybottom / 4, this.eyewidth, 0, 2 * Math.PI, false );
+         break ; 
+
+      case 'right':
+         ctx.beginPath();
+         ctx.arc(    this.xwidth / 2 + this.xwidth / 3                                    , this.ybottom / 2 - this.ybottom / 4, this.eyewidth, 0, 2 * Math.PI, false );
+
+         ctx.moveTo( this.xwidth / 2 + this.xwidth / 3 - this.eyewidth * 3 + this.eyewidth, this.ybottom / 2 - this.ybottom / 4 );
+         ctx.arc(    this.xwidth / 2 + this.xwidth / 3 - this.eyewidth * 3                , this.ybottom / 2 - this.ybottom / 4, this.eyewidth, 0, 2 * Math.PI, false );
+         break ; 
+
+      default :
+        // stilstaan....
+        ctx.beginPath();
+        ctx.arc(    this.xwidth / 2 - this.eyewidth * 3 / 2                 , this.ybottom / 2 - this.ybottom / 4 , this.eyewidth, 0, 2 * Math.PI, false );
+
+        ctx.moveTo( this.xwidth / 2 + this.eyewidth * 3 / 2 + this.eyewidth , this.ybottom / 2 - this.ybottom / 4 );
+        ctx.arc(    this.xwidth / 2 + this.eyewidth * 3 / 2                 , this.ybottom / 2 - this.ybottom / 4 , this.eyewidth, 0, 2 * Math.PI, false );
+
+        break ;
+      }
+
+      ctx.lineWidth   = this.linewidth;
+      ctx.fillStyle   = this.coloreye;
+      ctx.fill();
+      ctx.strokeStyle = this.colorline;
+      ctx.stroke();  
+
+      ctx.restore();
+
+      return obj_sprite ;
+   }
+
+   this.init = function() {
+      this.ybottom -= this.wavheigth ;
+
+      var iCnt ;
+      for( iCnt = 0; iCnt < this.i_nrimages; iCnt++ ) {
+         this.arr_image[ this.i_start_up    + iCnt ] = this.init_ghost( iCnt, "up"    );
+         this.arr_image[ this.i_start_left  + iCnt ] = this.init_ghost( iCnt, "left"  );
+         this.arr_image[ this.i_start_down  + iCnt ] = this.init_ghost( iCnt, "down"  );
+         this.arr_image[ this.i_start_right + iCnt ] = this.init_ghost( iCnt, "right" );
+         this.arr_image[ this.i_start_none  + iCnt ] = this.init_ghost( iCnt, "none"  );
+      }
+   }
+
+   this.getArrayPos = function ( iPos, cDirection ) {
+      var iStart = 0 ;
+      if      ( cDirection == "up"   ) { iStart = this.i_start_up   ; }
+      else if ( cDirection == "left" ) { iStart = this.i_start_left ; }
+      else if ( cDirection == "down" ) { iStart = this.i_start_down ; } 
+      else if ( cDirection == "right") { iStart = this.i_start_right; } 
+      else {                             iStart = this.i_start_none ; }
+
+      return iStart + iPos ;
+   }
+   this.getCurrentPos = function () {
+      return this.getArrayPos( this.curr_pos, this.curr_direct );
+   }
+
+   this.show = function() {
+     var obj_sprite ;
+     if ( this.last_pos >= 0 ) {
+       obj_sprite = this.arr_image[ this.last_pos ] ;
+       obj_sprite.hide();
+     } 
+     this.last_pos = this.getCurrentPos() ;
+
+     obj_sprite = this.arr_image[ this.last_pos ] ;
+     obj_sprite.setPosition( this.i_xpos, this.i_ypos ) ;
+     obj_sprite.show();
+
+   }
+   this.hide = function() {
+     this.timerEnd(); 
+     if ( this.last_pos >= 0 ) {
+       var obj_sprite = this.arr_image[ this.last_pos ] ;
+       obj_sprite.hide();
+       this.last_pos = -1; 
+     }
+   }
+   this.nextImage = function() {
+      // this.hide();
+      this.curr_pos += this.curr_cnt ;
+      if ( this.curr_pos < 0 ) {
+         this.curr_pos = 0 ;
+         this.curr_cnt = 1 ;
+      }
+      if ( this.curr_pos >= this.i_nrimages ) { 
+         this.curr_pos = this.i_nrimages - 1  ;
+         this.curr_cnt = -1 ;
+      }
+      this.show();
+   }
+   this.timerStart = function() {
+       this.timerEnd();
+    
+       var me = this ;
+       window.setInterval( function() { me.nextImage() }, this.time_interval ); 
+   }
+   this.timerEnd = function () {
+      if ( this.obj_timer ) { 
+          window.clearInterval( this.obj_timer );
+          this.obj_timer = null ;
+      }
+   }
+}
+
+
+
+
+
+//
+// h5Tegel
+// .......
+// Draw 1 tile used by h5PlayField
+//
+//
+function h5Tegel () {
+  //
+  // LB H MB H RB  
+  // V    V     V
+  // LM H M  H RM
+  // V    V     V
+  // LO H MO H RO 
+  //
+  // L = left
+  // B = up
+  // M = middle
+  // R = richt
+  // O = bottom
+  // V = vertical
+  // H = horizontal
+  //
+  //  1 - LB - left up 
+  //  2 - MB - middle up
+  //  3 - RB - right up
+  //  4 - H  - horizontal 
+  //  5 - V  - vertical
+  //  6 - M  - middle (cross)
+  //  7 - LO - left bottom
+  //  8 - MO - middle bottom
+  //  9 - RO - right bottom
+  // 10 - LM - left middle
+  // 11 - RM - right middle
+  
+  this.i_width      = 60        ; // width in pixels of 1 tile
+  this.i_linesize   =  4        ; // line size
+  this.c_linecolor  = "#b0c641" ;
+  this.i_linespace  = 20        ; // size between the too lines
+  this.i_lineradius =  6        ; // radius in pixels of curve
+
+  this.obj_context  = null      ; // canvas context too draw into
+
+  this.tegel_LB = function( ixpos, iypos ) {
+     //
+     // drawing is not calculated in points but in floating points
+     // point 59 en point 60 are seprated by with space if draw 2 lines too it
+     // solution, draw the lines 1 point futher
+     // we do this for the right and bottom site
+     //
+     var iDelta = Math.round( ( this.i_width - this.i_linespace ) / 2 - this.i_linesize / 2 );
+
+     this.obj_context.beginPath();
+
+
+     // buiten verticaal
+     this.obj_context.moveTo( ixpos + iDelta - 1       , iypos + this.i_width );
+     this.obj_context.lineTo( ixpos + iDelta - 1       , iypos + this.i_width - iDelta + this.i_lineradius      );
+
+     // buiten horizontaal
+     this.obj_context.moveTo( ixpos + this.i_width - iDelta  + this.i_lineradius -1 - this.i_linespace , iypos + iDelta  - 1  );
+     this.obj_context.lineTo( ixpos + this.i_width                                  , iypos + iDelta  - 1  );
+
+     // buiten bocht
+     this.obj_context.moveTo( ixpos + iDelta - 1       , iypos + this.i_width - iDelta + this.i_lineradius     );
+     this.obj_context.arc( ixpos + this.i_width - iDelta + this.i_lineradius - 1 - this.i_linespace 
+                         , iypos + this.i_width - iDelta + this.i_lineradius - 1 - this.i_linespace 
+                         , this.i_lineradius + this.i_linesize // + this.i_linespace / 2 
+                         , Math.PI 
+                         , - Math.PI / 2
+                         , false
+                         );
+     
+     // binnen verticaal
+//     this.obj_context.moveTo( ixpos + this.i_width - iDelta - 1, iypos + this.i_width - 1          );
+//     this.obj_context.lineTo( ixpos + this.i_width - iDelta - 1, iypos + this.i_width - 1 - iDelta + this.i_lineradius );
+     this.obj_context.moveTo( ixpos + this.i_width - iDelta , iypos + this.i_width           );
+     this.obj_context.lineTo( ixpos + this.i_width - iDelta , iypos + this.i_width - iDelta + this.i_lineradius );
+
+     // binnen horizontal
+//     this.obj_context.moveTo( ixpos + this.i_width - iDelta - 1 + this.i_lineradius, iypos + this.i_width - 1 - iDelta  );
+//     this.obj_context.lineTo( ixpos + this.i_width - 1                             , iypos + this.i_width - 1 - iDelta  );
+     this.obj_context.moveTo( ixpos + this.i_width - iDelta  + this.i_lineradius, iypos + this.i_width - iDelta  );
+     this.obj_context.lineTo( ixpos + this.i_width                              , iypos + this.i_width - iDelta  );
+
+     // binnen bocht
+//     this.obj_context.moveTo( ixpos + this.i_width - iDelta - 1, iypos + this.i_width - 1 - iDelta + this.i_lineradius );
+//     this.obj_context.arc( ixpos + this.i_width - iDelta - 1 + this.i_lineradius
+//                         , iypos + this.i_width - iDelta - 1 + this.i_lineradius
+//                         , this.i_lineradius
+//                         , Math.PI 
+//                         , - Math.PI / 2
+//                         , false
+//                         );
+     this.obj_context.moveTo( ixpos + this.i_width - iDelta , iypos + this.i_width - iDelta + this.i_lineradius );
+     this.obj_context.arc( ixpos + this.i_width - iDelta + this.i_lineradius
+                         , iypos + this.i_width - iDelta + this.i_lineradius
+                         , this.i_lineradius
+                         , Math.PI 
+                         , - Math.PI / 2
+                         , false
+                         );
+
+     this.obj_context.strokeStyle = this.c_linecolor ;
+     this.obj_context.lineWidth   = this.i_linesize  ; 
+     this.obj_context.stroke();
+  }
+
+  this.tegel_RB = function( ixpos, iypos ) {
+      this.obj_context.save();
+      this.obj_context.rotate(Math.PI / 2); // +90 graden
+
+      this.tegel_LB( iypos , (ixpos * -1) - this.i_width + 1 ); // +2 voor 0-based 
+
+      this.obj_context.restore();
+  }
+
+  this.tegel_LO = function( ixpos, iypos ) {
+      this.obj_context.save();
+      this.obj_context.rotate( - Math.PI / 2); // -90 graden 
+
+      this.tegel_LB( (iypos * -1 ) - this.i_width + 1 , ixpos );  // +2 voor 0-based 
+
+      this.obj_context.restore();
+  }
+
+  this.tegel_RO = function( ixpos, iypos ) {
+      this.obj_context.save();
+      this.obj_context.rotate( Math.PI );  // + 180 graden
+
+      this.tegel_LB( (ixpos * -1) - this.i_width + 1, (iypos * -1 ) - this.i_width + 1 ); // +2 voor 0-based 
+
+      this.obj_context.restore();
+  }
+
+  this.tegel_H = function( ixpos, iypos ) {
+     var iDelta = Math.round( ( this.i_width - this.i_linespace ) / 2 - this.i_linesize / 2 );
+
+     this.obj_context.beginPath();
+
+
+     // bovenste lijn
+     this.obj_context.moveTo( ixpos                   , iypos + iDelta  - 1 );
+     this.obj_context.lineTo( ixpos + this.i_width , iypos + iDelta  - 1 );
+
+     // onderste lijn
+//     this.obj_context.moveTo( ixpos                   , iypos + this.i_width - 1 - iDelta );
+//     this.obj_context.lineTo( ixpos + this.i_width - 1, iypos + this.i_width - 1 - iDelta );
+     this.obj_context.moveTo( ixpos                   , iypos + this.i_width  - iDelta );
+     this.obj_context.lineTo( ixpos + this.i_width    , iypos + this.i_width  - iDelta );
+
+
+     this.obj_context.strokeStyle = this.c_linecolor ;
+     this.obj_context.lineWidth   = this.i_linesize  ; 
+     this.obj_context.stroke();
+  }
+
+  this.tegel_V = function( ixpos, iypos ) {
+      this.obj_context.save();
+      this.obj_context.rotate( - Math.PI / 2); // -90 graden 
+
+      this.tegel_H( (iypos * -1 ) - this.i_width + 1 , ixpos );  // +2 voor 0-based 
+
+      this.obj_context.restore();
+  }
+
+
+  this.tegel_MB = function( ixpos, iypos ) {
+     var iDelta = Math.round( ( this.i_width - this.i_linespace ) / 2 - this.i_linesize / 2 );
+
+     this.obj_context.beginPath();
+
+     // bovenste lijn
+     this.obj_context.moveTo( ixpos                - 1, iypos + iDelta  - 1 );
+     this.obj_context.lineTo( ixpos + this.i_width    , iypos + iDelta  - 1 );
+
+
+
+     // binnen verticaal - rechts
+     this.obj_context.moveTo( ixpos + this.i_width - iDelta , iypos + this.i_width           );
+     this.obj_context.lineTo( ixpos + this.i_width - iDelta , iypos + this.i_width - iDelta + this.i_lineradius );
+
+     // binnen horizontal
+     this.obj_context.moveTo( ixpos + this.i_width - iDelta  + this.i_lineradius, iypos + this.i_width - iDelta  );
+     this.obj_context.lineTo( ixpos + this.i_width                              , iypos + this.i_width - iDelta  );
+
+     // binnen bocht
+     this.obj_context.moveTo( ixpos + this.i_width - iDelta , iypos + this.i_width - iDelta + this.i_lineradius );
+     this.obj_context.arc( ixpos + this.i_width - iDelta + this.i_lineradius
+                         , iypos + this.i_width - iDelta + this.i_lineradius
+                         , this.i_lineradius
+                         , Math.PI 
+                         , - Math.PI / 2
+                         , false
+                         );
+
+
+     // binnen verticaal - links
+     this.obj_context.moveTo( ixpos + iDelta - 1, iypos + this.i_width             );
+     this.obj_context.lineTo( ixpos + iDelta - 1, iypos + this.i_width - iDelta + this.i_lineradius );
+
+     // binnen horizontal
+     this.obj_context.moveTo( ixpos + iDelta  - this.i_lineradius   , iypos + this.i_width - iDelta  );
+     this.obj_context.lineTo( ixpos                              - 1, iypos + this.i_width - iDelta  );
+
+     // binnen bocht
+     this.obj_context.moveTo( ixpos + iDelta - 1, iypos + this.i_width - iDelta + this.i_lineradius );
+     this.obj_context.arc( ixpos                + iDelta - this.i_lineradius - 1
+                         , iypos + this.i_width - iDelta + this.i_lineradius
+                         , this.i_lineradius
+                         , 0 // Math.PI
+                         , Math.PI * 3 / 2  // - Math.PI / 2
+                         , true
+                         );
+
+     this.obj_context.strokeStyle = this.c_linecolor ;
+     this.obj_context.lineWidth   = this.i_linesize  ; 
+     this.obj_context.stroke();
+  }
+
+  this.tegel_ML = function( ixpos, iypos ) {
+      this.obj_context.save();
+      this.obj_context.rotate( - Math.PI / 2); // -90 graden 
+
+      this.tegel_MB( (iypos * -1 ) - this.i_width + 1 , ixpos );  // +2 voor 0-based 
+
+      this.obj_context.restore();
+  }
+
+  this.tegel_MO = function( ixpos, iypos ) {
+      this.obj_context.save();
+      this.obj_context.rotate( Math.PI );  // + 180 graden
+
+      this.tegel_MB( (ixpos * -1) - this.i_width + 1, (iypos * -1 ) - this.i_width + 1 ); // +2 voor 0-based 
+
+      this.obj_context.restore();
+  }
+
+
+  this.tegel_MR = function( ixpos, iypos ) {
+      this.obj_context.save();
+      this.obj_context.rotate(Math.PI / 2); // +90 graden
+
+      this.tegel_MB( iypos , (ixpos * -1) - this.i_width + 1 ); // +2 voor 0-based 
+
+      this.obj_context.restore();
+  }
+
+
+  this.tegel_M = function( ixpos, iypos ) {
+     var iDelta = Math.round( ( this.i_width - this.i_linespace ) / 2 - this.i_linesize / 2 );
+
+     this.obj_context.beginPath();
+
+
+     // binnen verticaal - top - rechts
+     this.obj_context.moveTo( ixpos + this.i_width - iDelta , iypos - 1                               );
+     this.obj_context.lineTo( ixpos + this.i_width - iDelta , iypos + iDelta - this.i_lineradius  );
+
+     // binnen horizontal
+     this.obj_context.moveTo( ixpos + this.i_width - iDelta  + this.i_lineradius, iypos + iDelta - 1 );
+     this.obj_context.lineTo( ixpos + this.i_width                              , iypos + iDelta - 1 );
+
+     // binnen bocht
+     this.obj_context.moveTo( ixpos + this.i_width - iDelta , iypos + iDelta - this.i_lineradius );
+     this.obj_context.arc( ixpos + this.i_width - iDelta + this.i_lineradius
+                         , iypos +                iDelta - this.i_lineradius - 1
+                         , this.i_lineradius
+                         , - Math.PI 
+                         , - Math.PI * 3 / 2
+                         , true
+                         );
+
+
+     // binnen verticaal - top- links
+     this.obj_context.moveTo( ixpos + iDelta - 1, iypos              - 1);
+     this.obj_context.lineTo( ixpos + iDelta - 1, iypos + iDelta - this.i_lineradius );
+
+     // binnen horizontal
+     this.obj_context.moveTo( ixpos + iDelta  - this.i_lineradius   , iypos + iDelta - 1  );
+     this.obj_context.lineTo( ixpos                              - 1, iypos + iDelta - 1  );
+
+     // binnen bocht
+     this.obj_context.moveTo( ixpos + iDelta - 1, iypos + iDelta - this.i_lineradius );
+     this.obj_context.arc( ixpos + iDelta - this.i_lineradius - 1
+                         , iypos + iDelta - this.i_lineradius - 1
+                         , this.i_lineradius
+                         , 0
+                         , Math.PI / 2
+                         , false
+                         );
+
+
+
+     // binnen verticaal - bottom - rechts
+     this.obj_context.moveTo( ixpos + this.i_width - iDelta , iypos + this.i_width           );
+     this.obj_context.lineTo( ixpos + this.i_width - iDelta , iypos + this.i_width - iDelta + this.i_lineradius );
+
+     // binnen horizontal
+     this.obj_context.moveTo( ixpos + this.i_width - iDelta  + this.i_lineradius, iypos + this.i_width - iDelta  );
+     this.obj_context.lineTo( ixpos + this.i_width                              , iypos + this.i_width - iDelta  );
+
+     // binnen bocht
+     this.obj_context.moveTo( ixpos + this.i_width - iDelta , iypos + this.i_width - iDelta + this.i_lineradius );
+     this.obj_context.arc( ixpos + this.i_width - iDelta + this.i_lineradius
+                         , iypos + this.i_width - iDelta + this.i_lineradius
+                         , this.i_lineradius
+                         , Math.PI 
+                         , - Math.PI / 2
+                         , false
+                         );
+
+
+     // binnen verticaal - bottom - links
+     this.obj_context.moveTo( ixpos + iDelta - 1, iypos + this.i_width             );
+     this.obj_context.lineTo( ixpos + iDelta - 1, iypos + this.i_width - iDelta + this.i_lineradius );
+
+     // binnen horizontal
+     this.obj_context.moveTo( ixpos + iDelta  - this.i_lineradius   , iypos + this.i_width - iDelta  );
+     this.obj_context.lineTo( ixpos                              - 1, iypos + this.i_width - iDelta  );
+
+     // binnen bocht
+     this.obj_context.moveTo( ixpos + iDelta - 1, iypos + this.i_width - iDelta + this.i_lineradius );
+     this.obj_context.arc( ixpos                + iDelta - this.i_lineradius - 1
+                         , iypos + this.i_width - iDelta + this.i_lineradius
+                         , this.i_lineradius
+                         , 0 // Math.PI
+                         , Math.PI * 3 / 2  // - Math.PI / 2
+                         , true
+                         );
+
+     this.obj_context.strokeStyle = this.c_linecolor ;
+     this.obj_context.lineWidth   = this.i_linesize  ; 
+     this.obj_context.stroke();
+  }
+
+
+}
+
+//
+// h5PlayField
+// ...........
+// init   : init object(build field)
+//
+function h5PlayField() {
+   // canvas object
+   // grote / breedte
+   // 
+   this.i_width_block      = 0  ; // calculated on basis of arr_field & i_tegel_width (blocks)
+   this.i_height_block     = 0  ;
+
+   this.i_width            = 0  ; // calculated on basis of arr_field & i_tegel_width (pixels)
+   this.i_height           = 0  ;
+
+   this.obj_context        = null ; // canvas object
+   this.obj_parent         = null ; // parent voor canvas
+
+   this.c_style_border     = "0px" ;
+
+   this.i_tegel_width      = 60     ;
+   this.i_tegel_linesize   =  4     ;
+   this.i_tegel_linespace  = 40     ; // ruimte tussen de lijnen
+   this.i_tegel_lineradius =  6     ; // aantal pixels van de bocht ten kosten van het rechte stuk
+
+   this.i_point_size       =  4     ; // = straal
+   this.c_point_color      = "#bec2c7" ; // grijs light
+   this.c_point_coldel     = "#fff"    ; // verwijder kleur
+   // 4ac7ed  = blauw
+   // f68d2e  = orange
+   // fba12e  = orange licht
+   // afc836  = groen
+   // 666666  = grijs donker
+   // bec2c7  = grijs licht
+
+   this.arr_points         = [] ; // array of points, index = xpos, value = ypos
+
+   this.obj_sprite = new h5Sprite() ; // use sprite, all canvas handling & default
+   this.obj_tegel  = new h5Tegel()  ;
+   
+// all the possible options
+//   this.arr_field  =  [  [ 'LB', 'H' , 'MB', 'H' , 'RB' ]
+//                      ,  [ 'V' , ''  , 'V' , ''  , 'V'  ]
+//                      ,  [ 'ML', 'H' , 'M' , 'H' , 'MR' ]
+//                      ,  [ 'V' , ''  , 'V' , ''  , 'V'  ]
+//                      ,  [ 'LO', 'H' , 'MO', 'H' , 'RO' ]
+//                      ];
+
+   this.arr_field  =  [  [ 'LB', 'H' , 'MB', 'H' , 'RB', 'LB', 'H' , 'MB', 'H' , 'RB' ]
+                      ,  [ 'V' , ''  , 'V' , ''  , 'V' , 'V' , ''  , 'V' , ''  , 'V'  ]
+                      ,  [ 'ML', 'H' , 'M' , 'MB', 'MO', 'MO', 'MB', 'M' , 'H' , 'MR' ]
+                      ,  [ 'LO', 'H' , 'MR', 'LO', 'RB', 'LB', 'RO', 'ML', 'H' , 'RO' ]
+                      ,  [ ''  , ''  , 'V' , 'LB', 'MO', 'MO', 'RB', 'V' , ''  , ''   ]
+                      ,  [ 'H' , 'H' , 'M' , 'MR', ''  , ''  , 'ML', 'M' , 'H' , 'H'  ]
+                      ,  [ ''  , ''  , 'V' , 'ML', 'H' , 'H' , 'MR', 'V' , ''  ,  ''  ]
+                      ,  [ 'LB', 'H' , 'M' , 'MO', 'RB', 'LB', 'MO', 'M' , 'H' , 'RB' ]
+                      ,  [ 'LO', 'RB', 'ML', 'MB', 'MO', 'MO', 'MB', 'MR', 'LB', 'RO' ]
+                      ,  [ 'LB', 'MO', 'RO', 'LO', 'RB', 'LB', 'RO', 'LO', 'MO', 'RB' ]
+                      ,  [ 'LO', 'H' , 'H' , 'H' , 'MO', 'MO', 'H' , 'H' , 'H' , 'RO' ]
+                      ];
+
+   this.init = function() {
+      this.obj_sprite.obj_parent = this.obj_parent ;
+
+
+      this.i_height_block = this.arr_field.length      ;
+      this.i_width_block  = this.arr_field[ 0 ].length ;
+
+      this.i_height       = this.i_height_block * this.i_tegel_width ;
+      this.i_width        = this.i_width_block  * this.i_tegel_width ;
+
+      this.obj_sprite.c_style_border = this.c_style_border ;
+      this.obj_sprite.i_width        = this.i_width        ;
+      this.obj_sprite.i_height       = this.i_height       ;
+      this.obj_sprite.init();
+
+
+      this.obj_tegel.i_width      = this.i_tegel_width           ;
+      this.obj_tegel.i_linesize   = this.i_tegel_linesize        ;
+      this.obj_tegel.i_linespace  = this.i_tegel_linespace       ;
+      this.obj_tegel.i_lineradius = this.i_tegel_lineradius      ; 
+      this.obj_tegel.obj_context  = this.obj_sprite.getContext() ;
+
+      this.obj_context            = this.obj_sprite.getContext() ;
+
+      var iCntx = 0 ;
+      var iCnty = 0 ;
+      var ixpos = 0 ;
+      var iypos = 0 ;
+
+      var cBlock = '' ;
+      for( iCntx = 0; iCntx < this.i_width_block; iCntx++ ) {
+          for( iCnty = 0; iCnty < this.i_height_block; iCnty++ ) {
+            cBlock = this.arr_field[ iCnty ][ iCntx ];
+
+            ixpos = iCntx * this.i_tegel_width ;
+            iypos = iCnty * this.i_tegel_width ;
+            switch( cBlock ) {
+              case 'LB':  this.obj_tegel.tegel_LB( ixpos, iypos );  break ;
+              case 'MB':  this.obj_tegel.tegel_MB( ixpos, iypos );  break ;
+              case 'RB':  this.obj_tegel.tegel_RB( ixpos, iypos );  break ;
+              case 'H' :  this.obj_tegel.tegel_H(  ixpos, iypos );  break ;
+              case 'V' :  this.obj_tegel.tegel_V(  ixpos, iypos );  break ;
+              case 'M' :  this.obj_tegel.tegel_M(  ixpos, iypos );  break ;
+              case 'LO':  this.obj_tegel.tegel_LO( ixpos, iypos );  break ;
+              case 'MO':  this.obj_tegel.tegel_MO( ixpos, iypos );  break ;
+              case 'RO':  this.obj_tegel.tegel_RO( ixpos, iypos );  break ;
+              case 'ML':  this.obj_tegel.tegel_ML( ixpos, iypos );  break ;
+              case 'MR':  this.obj_tegel.tegel_MR( ixpos, iypos );  break ;
+            }
+          } 
+      }
+      // draw and register all the points
+      this.point_painting() ;
+
+      this.obj_sprite.show();
+   } 
+
+   this.point_painting = function() {
+
+      this.arr_points = [] ; // empty point array
+
+      var iCntx = 0 ;
+      var iCnty = 0 ;
+      var ixpos = 0 ;
+      var iypos = 0 ;
+
+      var cBlock = '' ;
+      for( iCntx = 0; iCntx < this.i_width_block; iCntx++ ) {
+          for( iCnty = 0; iCnty < this.i_height_block; iCnty++ ) {
+            cBlock = this.arr_field[ iCnty ][ iCntx ];
+
+            if ( cBlock.length == 0 ) {
+               continue ;
+
+            }
+            // uitzondering
+            if ( iCnty == 5 && cBlock == 'H' ) {
+                continue ;
+            }   
+
+            ixpos = iCntx * this.i_tegel_width ;
+            iypos = iCnty * this.i_tegel_width ;
+
+            // zet in centrum elk blok een point
+            this.point_draw( ixpos + this.i_tegel_width / 2, iypos + this.i_tegel_width / 2 ) ;
+
+            // array van points bij houden voor collition detection
+            switch( cBlock ) {
+              case 'LB':  
+                this.point_draw( ixpos + this.i_tegel_width    , iypos + this.i_tegel_width / 2 ) ;
+                this.point_draw( ixpos + this.i_tegel_width / 2, iypos + this.i_tegel_width     ) ;
+	  	break ;
+
+              case 'MB':  
+//                this.point_draw( ixpos                         , iypos + this.i_tegel_width / 2 ) ;
+                this.point_draw( ixpos + this.i_tegel_width    , iypos + this.i_tegel_width / 2 ) ;
+                this.point_draw( ixpos + this.i_tegel_width / 2, iypos + this.i_tegel_width     ) ;
+		break ;
+
+              case 'RB':  
+//                this.point_draw( ixpos                         , iypos + this.i_tegel_width / 2 ) ;
+                this.point_draw( ixpos + this.i_tegel_width / 2, iypos + this.i_tegel_width     ) ;
+		break ;
+
+              case 'H' :  
+//                this.point_draw( ixpos                         , iypos + this.i_tegel_width / 2 ) ;
+                this.point_draw( ixpos + this.i_tegel_width    , iypos + this.i_tegel_width / 2 ) ;
+		break ;
+
+              case 'V' :  
+//                this.point_draw( ixpos + this.i_tegel_width / 2, iypos                          ) ;
+                this.point_draw( ixpos + this.i_tegel_width / 2, iypos + this.i_tegel_width     ) ;
+		break ;
+
+              case 'M' :  
+
+//                this.point_draw( ixpos + this.i_tegel_width / 2, iypos                          ) ;
+                this.point_draw( ixpos + this.i_tegel_width / 2, iypos + this.i_tegel_width     ) ;
+
+		// speciale uitzondering	
+                if ( iCnty == 5 && iCntx > 5) {
+                   // do nothing
+                } else {
+//                   this.point_draw( ixpos                         , iypos + this.i_tegel_width / 2 ) ;
+                   this.point_draw( ixpos + this.i_tegel_width    , iypos + this.i_tegel_width / 2 ) ;
+                }
+		break ;
+
+              case 'LO':  
+//                this.point_draw( ixpos + this.i_tegel_width / 2, iypos                          ) ;
+                this.point_draw( ixpos + this.i_tegel_width    , iypos + this.i_tegel_width / 2 ) ;
+		break ;
+
+              case 'MO':  
+//                this.point_draw( ixpos                         , iypos + this.i_tegel_width / 2 ) ;
+                this.point_draw( ixpos + this.i_tegel_width    , iypos + this.i_tegel_width / 2 ) ;
+//                this.point_draw( ixpos + this.i_tegel_width / 2, iypos                          ) ;
+		break ;
+
+              case 'RO':  
+//                this.point_draw( ixpos                         , iypos + this.i_tegel_width / 2 ) ;
+//                this.point_draw( ixpos + this.i_tegel_width / 2, iypos                          ) ;
+		break ;
+
+              case 'ML':  
+//                this.point_draw( ixpos + this.i_tegel_width / 2, iypos                          ) ;
+                this.point_draw( ixpos + this.i_tegel_width / 2, iypos + this.i_tegel_width     ) ;
+                this.point_draw( ixpos + this.i_tegel_width    , iypos + this.i_tegel_width / 2 ) ;
+		break ;
+
+              case 'MR':  
+//                this.point_draw( ixpos + this.i_tegel_width / 2, iypos                          ) ;
+                this.point_draw( ixpos + this.i_tegel_width / 2, iypos + this.i_tegel_width     ) ;
+//                this.point_draw( ixpos                         , iypos + this.i_tegel_width / 2 ) ;
+		break ;
+            }
+         } 
+      }
+   }
+
+   
+   // ixpos, iypos = center circle
+   this.point_draw = function( ixpos, iypos, lDel ) {
+     var cColor = this.c_point_color  ;
+     
+     if( lDel == true ) {
+        cColor = this.c_point_coldel ;
+     } else {
+       // register point
+       this.arr_points.push( { xpos:ixpos, ypos: iypos } );
+     }
+
+     this.obj_context.beginPath();
+     this.obj_context.arc( ixpos 
+                         , iypos 
+                         , this.i_point_size
+                         , 0
+                         , Math.PI * 2
+                         , false
+                         );
+
+     this.obj_context.fillStyle = cColor ;
+     this.obj_context.fill();
+   }
+}
+
+//
+// scherm dat aftel en dan de gegeven functie uitvoert
+//
+function goScreen () {
+  this.idScreen      = 'divGoScreen';
+  this.oFieldScreen  = null ;
+  this.sizeStart     = 5000 ;
+  this.sizeMin       =   50 ;
+  this.sizeCurrent   = 5000 ;
+  this.iCurPosArr    =    0 ; 
+  this.timerInterval =   10 ;
+  this.arrData       = [ '3', '2', '1', 'Go' ];
+  
+  this.obj_timer     = null ;
+
+  this.callCompleted = null ;
+
+  // start go screen, callIfCompleted will be called by the end
+  this.start = function( CallIfCompleted ) {
+     this.callCompleted = CallIfCompleted ;
+     this.oFieldScreen  = document.getElementById( this.idScreen );
+
+     this.sizeCurrent                = this.sizeStart ;
+     this.iCurPosArr                 = 0              ;
+     this.oFieldScreen.style.display = "block"        ; 
+     this.oFieldScreen.innerHTML     = this.arrData[ this.iCurPosArr ] ;
+
+     var me = this ;
+     this.obj_timer = window.setInterval( function() { me.timerEvent() }, this.timerInterval );
+  } 
+
+  this.timerEvent = function() {
+     this.oFieldScreen.style.fontSize = this.sizeCurrent + "%" ;
+
+     this.sizeCurrent -= this.sizeMin ;
+
+
+     if ( this.sizeCurrent <= 0 ) {
+        this.iCurPosArr += 1 ; 
+        if ( this.iCurPosArr >= this.arrData.length ) {
+            window.clearInterval( this.obj_timer );
+            this.oFieldScreen.style.display = "none" ; 
+
+            // call complete function
+            if ( this.callCompleted ) {
+                this.callCompleted();
+            }
+        } else {
+          this.sizeCurrent                 = this.sizeStart ;
+          this.oFieldScreen.innerHTML      = this.arrData[ this.iCurPosArr ] ;
+          this.oFieldScreen.style.fontSize = this.sizeCurrent + "%" ;
+        }
+     } 
+  }
+}
+
+//
+// message box
+//
+function askScreen () {
+  this.idScreen      = 'divAskScreen'        ;
+  this.idBody        = 'divAskScreen_body'   ;
+  this.idHeader      = 'divAskScreen_header' ;
+  this.idFooter      = 'divAskScreen_footer' ;
+  this.oFieldScreen  = null ;
+  this.oFieldBody    = null ;
+  this.oFieldFooter  = null ;
+  this.oFieldHeader  = null ;
+
+  // you must html-encode the text yourself...
+  this.txtTitle      = 'Html5 PacClone' ;  
+  this.txtQuestion   = ''; 
+  this.arrButtons    = [ { text:'Ok'     , value: 'ok'     }
+//                       , { text:'Cancel' , value: 'cancel' }
+//                       , { text:'Extra'  , value: 'extra'  } 
+                       ] ;
+
+  this.callAction    = null ; // call back function
+
+  this.obj_timer      = null     ;
+  this.timerInterval  =   10     ;
+  this.opacityInterval=    0.025 ;
+  // aantal intervals =   40      (1/0.025)
+  this.rotateInterval =    2.25  ;
+  this.rotate         =   90     ;
+  this.transX         = -200     ; // moet op -50 uitzoeken in 40 stappen
+  this.transXInterval =    3.75  ;
+  
+
+
+  // start go screen, callIfCompleted will be called by the end
+  this.start = function( CallAction ) {
+     this.callAction    = CallAction       ;
+
+     this.oFieldScreen  = document.getElementById( this.idScreen );
+     this.oFieldBody    = document.getElementById( this.idBody   );
+     this.oFieldFooter  = document.getElementById( this.idFooter );
+     this.oFieldHeader  = document.getElementById( this.idHeader );
+
+     this.timerEnd() ;
+
+     this.oFieldScreen.style.display = "block"          ; 
+     this.oFieldBody.innerHTML       = this.txtQuestion ;
+     this.oFieldHeader.innerHTML     = this.txtTitle    ;
+
+     // buttons
+     var cbuttons = '' ;
+     var iCnt ;
+     for( iCnt = 0 ; iCnt < this.arrButtons.length; iCnt++ ) {
+        cbuttons += '<button id="' + this.idScreen + '_'+ iCnt + '"';
+        cbuttons += '>';
+        cbuttons += this.arrButtons[ iCnt ].text ;
+        cbuttons += '</button>';
+     }
+
+     this.oFieldFooter.innerHTML = cbuttons ;
+
+     // zet action
+     for( iCnt = 0 ; iCnt < this.arrButtons.length; iCnt++ ) {
+       this.setButtonAction( iCnt ) ;  
+     }
+
+     // zet 1e button focus
+     document.getElementById( this.idScreen + '_0'  ).focus();
+     
+     var me          = this ;
+
+     this.rotate     = 90 ;
+     this.oFieldScreen.style.transform = "translate(" + this.transX + "%, -50%) rotate3d( 1,0,0," + this.rotate + "deg)" ;
+     //
+     // er is een transitionend event, zie https://developer.mozilla.org/en-US/docs/Web/Events/transitionend
+     // nadeel, opticy kan niet via dit systeem
+     //
+     this.opacity                    = 0            ;
+     this.oFieldScreen.style.opacity = this.opacity ;
+     this.obj_timer                  = window.setInterval( function() { me.timerEventStart() }, this.timerInterval );
+  } 
+
+  this.setButtonAction = function( iNr ) {
+     var me       = this ;
+     var cValue   = this.arrButtons[ iNr ].value ;
+     var oObj     = document.getElementById( this.idScreen + '_'+ iNr );
+     oObj.onclick = function() { me.actionButton( cValue ) } ;
+  }
+
+  this.actionButton = function ( cValue ) {
+     this.timerEnd() ;
+
+     var me = this ;
+
+     this.resultVale = cValue ;
+     this.opacity    = 1      ;
+     this.obj_timer  = window.setInterval( function() { me.timerEventEnd() }, this.timerInterval );
+  } 
+  
+  this.timerEventEnd = function() {
+     this.opacity -= this.opacityInterval ;
+     this.rotate  += this.rotateInterval  ;
+     this.transX  += this.transXInterval  ;
+
+     if ( this.opacity <= 0 ) { 
+        this.timerEnd();
+        this.oFieldScreen.style.display = "none" ; 
+        this.callAction( this.resultVale ) ;
+     } else {
+        this.oFieldScreen.style.opacity = this.opacity;
+        this.oFieldScreen.style.transform = "translate(" + this.transX + "%, -50%) rotate3d( 1,0,0," + this.rotate + "deg)" ;
+     }
+  }
+
+  this.timerEventStart = function() {
+     this.opacity += this.opacityInterval ;
+     this.rotate  -= this.rotateInterval  ;
+     this.transX  += this.transXInterval  ;
+
+     if ( this.opacity >= 1 ) { 
+        this.timerEnd();
+        this.oFieldScreen.style.opacity = 1 ; 
+        this.oFieldScreen.style.transform = "translate(-50%, -50%)" ;
+
+     } else {
+        this.oFieldScreen.style.transform = "translate(" + this.transX + "%, -50%) rotate3d( 1,0,0," + this.rotate + "deg)" ;
+        this.oFieldScreen.style.opacity = this.opacity;
+     }
+  }
+
+  this.timerEnd = function() {
+     if ( this.obj_timer ) {
+       window.clearInterval( this.obj_timer );
+       this.obj_timer = null ;
+     }
+
+  }
+}
+</script>
+<style>
+
+table {
+   padding       : 0px;
+   border-spacing: 0px;
+
+}
+td {
+   white-space: nowrap
+}
+/* 
+** http://stackoverflow.com/questions/35883281/center-align-html-body-contents-vertically-and-horizontally
+*/
+.container {
+   position : absolute;
+   top      : 50%     ;
+   left     : 50%     ;
+   transform: translateX(-50%) translateY(-50%);
+}
+.bold {
+   font-weight: bold;
+}
+
+#divGoScreen {
+  position   : fixed;
+  top        : 50%;
+  left       : 50%;
+  transform  : translate(-50%, -50%);
+  display    : none ;
+  z-index    : 1000 ; 
+  text-shadow: 0.0em 0.0em 0.1em #e9ec0a;
+  font-weight: 900;
+  color      : rgba( 221, 10, 10, 0.5 )  ;
+}
+
+#divAskScreen {
+  position         : fixed ;
+  top              : 50%   ;
+  left             : 50%   ;
+  transform        : translate(-50%, -50%);
+  display          : none ;
+  background-color : rgba( 255, 255, 255, 0.84 );
+  font-weight      : 900  ;
+  border           :   1px solid black ;
+  padding-top      :  10px ;
+  padding-bottom   :  10px ;
+  padding-left     :  30px ;
+  padding-right    :  30px ;
+  font-size        : 500%  ;
+  box-shadow       : 10px 10px 6px #888888;
+  z-index          :1000   ;
+}
+
+#divAskScreen_header {
+   font-size           : 50%     ;
+   border-bottom-style : solid   ;
+   border-color        : #737373 ;
+   color               : #5d0018 ;
+   text-align          : center  ;
+   font-style          : italic  ;
+}
+
+#divAskScreen_body {
+   padding-top    : 10px ;
+   padding-bottom : 20px ;
+   text-shadow    :  0px 0px 20px grey;
+   white-space    : nowrap  ;
+   color          : #2a2a73 ;
+}
+
+#divAskScreen_footer {
+   border-top-style : solid   ;
+   border-color     : #737373 ;
+}
+
+#divAskScreen_footer {
+   display: flex;
+   padding-top   : 5px ;
+   padding-bottom: 0px ;
+   flex-direction: row ;
+   width         : 100%;
+   align-items   : stretch;
+}
+
+#divAskScreen_footer button {
+  border           :  4px solid #4e5d4e ;
+  border-radius    : 10px   ;
+  text-align       : center ;
+  white-space      : nowrap ;
+  background-color : #f8fff9;
+  color            : #3f804b;
+  font-weight      : 600    ;
+  margin-left      :   5px  ;
+  font-size        :  30%   ;
+  flex             :   1    ;
+}
+
+#divAskScreen_footer button:first-child {
+  margin-left      : 0px    ;
+}
+
+#divAskScreen_footer button:hover,#divAskScreen_footer button:focus {
+   background-color: #fff3f5 ; 
+   box-shadow      : 0px 0px 7px #fcff00 ; 
+   border-color    : #851d2c ; 
+   color           : #c8001c ;
+}
+</style>
+</head>
+<body onload="init()">
+<div id="divGoScreen"></div>
+<div id="divAskScreen">
+  <div id="divAskScreen_header"></div>
+  <div id="divAskScreen_body"></div>
+  <div id="divAskScreen_footer"></div>
+</div>
+<div class="container" id="container">
+<table>
+<tr>
+ <td>&nbsp;Direction:&nbsp;<span class="bold" id="playkey"></span></td>
+ <td style="text-align:right">Score:&nbsp;&nbsp;<span class="bold" id="playscore"></span>&nbsp;</td>
+</tr>
+<tr>
+<td colspan="2">
+<div id="playfield">
+</td>
+</div>
+</tr>
+<tr>
+  <td class="bold">
+Get all the points
+  </td>
+</tr>
+</table>
+</div>
+</body>
+</html>

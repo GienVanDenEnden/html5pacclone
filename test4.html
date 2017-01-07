@@ -1,0 +1,151 @@
+<html>
+<head>
+<script type="application/javascript">
+function goScreen () {
+  this.idScreen      = 'divGoScreen';
+  this.oFieldScreen  = null ;
+  this.sizeStart     = 5000 ;
+  this.sizeMin       =   50 ;
+  this.sizeCurrent   = 5000 ;
+  this.iCurPosArr    =    0 ; 
+  this.timerInterval =   10 ;
+  this.arrData       = [ 'We','3', '2', '1', 'Go' ];
+  
+  this.obj_timer     = null ;
+
+  this.callCompleted = null ;
+
+  // start go screen, callIfCompleted will be called by the end
+  this.start = function( CallIfCompleted ) {
+     this.callCompleted = CallIfCompleted ;
+     this.oFieldScreen  = document.getElementById( this.idScreen );
+
+     this.sizeCurrent                = this.sizeStart ;
+     this.iCurPosArr                 = 0              ;
+     this.oFieldScreen.style.display = "block"        ; 
+     this.oFieldScreen.innerHTML     = this.arrData[ this.iCurPosArr ] ;
+
+     var me = this ;
+     this.obj_timer = window.setInterval( function() { me.timerEvent() }, this.timerInterval );
+     me.timerEvent();
+  } 
+
+  this.timerEvent = function() {
+     this.oFieldScreen.style.fontSize = this.sizeCurrent + "%" ;
+
+     this.sizeCurrent -= this.sizeMin ;
+
+
+     if ( this.sizeCurrent <= 0 ) {
+        this.iCurPosArr += 1 ; 
+        if ( this.iCurPosArr >= this.arrData.length ) {
+            window.clearInterval( this.obj_timer );
+            this.oFieldScreen.style.display = "none" ; 
+
+            // call complete function
+            if ( this.callCompleted ) {
+                this.callCompleted();
+            }
+        } else {
+          this.sizeCurrent                 = this.sizeStart ;
+          this.oFieldScreen.innerHTML      = this.arrData[ this.iCurPosArr ] ;
+          this.oFieldScreen.style.fontSize = this.sizeCurrent + "%" ;
+        }
+     } 
+  }
+}
+
+
+function ok() {
+   alert( "the end" );
+}
+
+function draw() {
+  var canvas = document.getElementById("canvas");
+  var ctx = canvas.getContext("2d");
+
+  var oNr = document.getElementById( "nummer" );
+
+  var oNr = new goScreen() ;
+
+//  oNr.arrData = [] ;
+//  for( var i = 20; i >= 0; i-- ) {  
+//    oNr.arrData.push( i ) ;
+//  }
+
+  oNr.start( ok ) ;
+
+
+/*
+  oNr.innerHTML = "1" ;
+  oNr.style.fontSize ="5000%" ;
+ 
+  var iStart = 5000 ;
+  var iMin   =  50 ;
+  var iNr    = 3 ; 
+
+  oNr.innerHTML = iNr ;
+ 
+  var obj_timer = window.setInterval( function() { 
+     oNr.style.fontSize = iStart + "%" ;
+     iStart -= iMin ;
+     
+     if ( iStart <= 0 ) {
+        iNr = iNr - 1 ;
+        if ( iNr < 0 ) {
+            window.clearInterval( obj_timer );
+            oNr.style.display = "none"; 
+        } else {
+          iStart = 5000; 
+          if ( iNr == 0 ) {
+              oNr.innerHTML = "Go" ;
+              
+          } else {
+              oNr.innerHTML = iNr ;
+          }
+          
+          oNr.style.fontSize = iStart + "%" ;
+        }
+     } 
+  }
+  , 10 ); 
+
+*/
+}
+</script>
+<style>
+body {
+  background-color: blue ;
+
+}
+#divGoScreen {
+  position : fixed;
+  top      : 50%;
+  left     : 50%;
+  transform: translate(-50%, -50%);
+  display  : none ;
+  color    : #ff0000;
+/*
+  text-shadow: 0.015em 0.015em #0045a3, -0.015em -0.015em #0045a3, 0.015em -0.015em #0045a3, -0.015em 0.015em #0045a3, 0em 0.015em #0045a3, 0em -0.015em #0045a3, 0.015em 0em #0045a3, 0.0em 0.0em 0.1em #000000;
+  text-shadow: 0px 0px 0.02em #0045a3, 0.0em 0.0em 0.1em #000000;
+  text-shadow: 0.014em 0.014em #0045a3, 0.0em 0.0em 0.07em #000000;
+*/
+/*
+  background    : rgba( 255, 255, 255, 0 );
+*/
+  color    : rgba( 255, 255, 255, 1 );
+
+  text-shadow: 0px 0px 4px black;
+
+
+  font-weight: 900;
+
+}
+</style>
+</head>
+<body onload="draw()">
+  Testing
+  <canvas id="canvas" width="300" height="300"></canvas>
+  <div id="divGoScreen"></div>
+</body>
+</html>

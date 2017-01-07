@@ -1,0 +1,131 @@
+<html>
+<head>
+<script type="application/javascript">
+function draw() {
+
+  // de canvan
+  var canvas = document.getElementById("canvas");
+  var ctx    = canvas.getContext("2d");
+
+  
+// for(x=0; x<360; x += 20){
+//    ctx.moveTo(x+5,180);
+//    ctx.lineTo(x,180);
+// }
+
+var realsize = 400 ;
+
+
+ctx.save();
+
+var ybottom    = 400 ;
+var wavheigth  =  30 ;
+var xwidth     = 400 ;
+var xgradstart =   0 ;    // stap grote 30 aanbevolen, 360 graden nodig = 12 stappen
+var eyewidth   =  24 ;
+var linewidth  =   8 ;
+var headarc    = 160 ;
+
+var xgradwidth = 360 * 2.5 ; 
+
+var colorghost = 'blue'   ;
+var colorline  = 'yellow' ;
+var coloreye   = "rgba(255, 255, 255, 1.0)" ; // transparent
+
+var eyeposition = 'left'; // up, down, left, right, none
+
+// scale vertcial & horizontally
+ctx.scale( realsize / xwidth, realsize / ybottom );
+
+ybottom -= wavheigth ;
+
+ctx.beginPath();
+
+ctx.moveTo( xwidth / 2 ,0);
+ctx.arcTo( 0 ,0, 0, headarc , headarc);
+
+for(x=0; x <= xgradwidth ; x+=1){
+    y = ybottom + Math.sin( ( x + xgradstart ) * Math.PI / 180) * wavheigth ;
+    ctx.lineTo(x * xwidth / xgradwidth ,y);
+}
+
+ctx.arcTo( x * xwidth / xgradwidth - 1 ,0, xwidth / 2, 0 , headarc );
+
+ctx.closePath();
+
+ctx.lineWidth   = linewidth  ;
+ctx.fillStyle   = colorghost ;
+ctx.fill();
+ctx.strokeStyle = colorline  ;
+ctx.stroke();  
+
+
+// ctx.save();
+
+// scale vertcial 
+ctx.scale(1, 2);
+
+switch( eyeposition ) {
+  case 'up':
+     ctx.beginPath();
+     ctx.arc(    xwidth / 2 - eyewidth * 3 / 2           , ybottom / 2 - ybottom / 3 , eyewidth, 0, 2 * Math.PI, false );
+
+     ctx.moveTo( xwidth / 2 + eyewidth * 3 / 2 + eyewidth, ybottom / 2 - ybottom / 3 );
+     ctx.arc(    xwidth / 2 + eyewidth * 3 / 2           , ybottom / 2 - ybottom / 3, eyewidth, 0, 2 * Math.PI, false );
+     break ; 
+
+  case 'down':
+     ctx.beginPath();
+     ctx.arc(    xwidth / 2 - eyewidth * 3 / 2           , ybottom / 2 - ybottom / 5 , eyewidth, 0, 2 * Math.PI, false );
+
+     ctx.moveTo( xwidth / 2 + eyewidth * 3 / 2 + eyewidth, ybottom / 2 - ybottom / 5 );
+     ctx.arc(    xwidth / 2 + eyewidth * 3 / 2           , ybottom / 2 - ybottom / 5, eyewidth, 0, 2 * Math.PI, false );
+     break ; 
+
+  case 'left':
+     // draw circle which will be stretched into an oval
+     ctx.beginPath();
+     ctx.arc(    xwidth / 2 - xwidth / 3                          , ybottom / 2 - ybottom / 4, eyewidth, 0, 2 * Math.PI, false );
+
+     ctx.moveTo( xwidth / 2 - xwidth / 3 + eyewidth * 3 + eyewidth, ybottom / 2 - ybottom / 4 );
+     ctx.arc(    xwidth / 2 - xwidth / 3 + eyewidth * 3           , ybottom / 2 - ybottom / 4, eyewidth, 0, 2 * Math.PI, false );
+     break ; 
+
+  case 'right':
+     // draw circle which will be stretched into an oval
+     ctx.beginPath();
+     ctx.arc(    xwidth / 2 + xwidth / 3                          , ybottom / 2 - ybottom / 4, eyewidth, 0, 2 * Math.PI, false );
+
+     ctx.moveTo( xwidth / 2 + xwidth / 3 - eyewidth * 3 + eyewidth, ybottom / 2 - ybottom / 4 );
+     ctx.arc(    xwidth / 2 + xwidth / 3 - eyewidth * 3           , ybottom / 2 - ybottom / 4, eyewidth, 0, 2 * Math.PI, false );
+     break ; 
+
+  default :
+     // stilstaan....
+     ctx.beginPath();
+     ctx.arc(    xwidth / 2 - eyewidth * 3 / 2           , ybottom / 2 - ybottom / 4 , eyewidth, 0, 2 * Math.PI, false );
+
+     ctx.moveTo( xwidth / 2 + eyewidth * 3 / 2 + eyewidth, ybottom / 2 - ybottom / 4 );
+     ctx.arc(    xwidth / 2 + eyewidth * 3 / 2           , ybottom / 2 - ybottom / 4, eyewidth, 0, 2 * Math.PI, false );
+
+     break ;
+}
+
+// ctx.restore();
+
+ctx.lineWidth   = linewidth;
+ctx.fillStyle   = coloreye;
+ctx.fill();
+ctx.strokeStyle = colorline;
+ctx.stroke();  
+
+ctx.restore();
+
+
+}
+</script>
+</head>
+<body onload="draw()">
+  <canvas id="canvas" width="600" height="600"></canvas>
+</body>
+</html>
